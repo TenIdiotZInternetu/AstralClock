@@ -13,3 +13,6 @@ nextTime :: Clock -> Clock
 
 -- Returns the state of clock after the given time passes
 inTime :: Clock -> Clock
+
+
+instance 

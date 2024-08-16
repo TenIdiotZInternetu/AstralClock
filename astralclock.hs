@@ -3,15 +3,16 @@ import Data.Time.Calendar.OrdinalDate
 import Data.Fixed (Pico)
 
 class Clock c where
-    fromUtc :: UTCTime -> IO c
+    fromUtc :: UTCTime -> c
     toInterval :: c -> NominalDiffTime
 
 
 -- Returns the state off clock at current time
 now :: Clock c => IO c
 now = do
-    currentTime <- getCurrentTime
-    fromUtc currentTime
+    fromUtc <$> getCurrentTime
+
+
 
 -- Returns the next time the clock will be in the given state
 -- nextTime :: Clock -> Clock
@@ -21,11 +22,13 @@ now = do
 inTime :: Clock c => c -> IO c
 inTime clock = do
     currentTime <- getCurrentTime
-    fromUtc $ addUTCTime (toInterval clock) currentTime
+    let resultTime = addUTCTime (toInterval clock) currentTime
+    return $ fromUtc resultTime
 
 
 instance Clock UTCTime where
-    fromUtc = return
-    toInterval (UTCTime date seconds) = 
+    fromUtc time = time
+    toInterval (UTCTime date seconds) =
         let days = fromIntegral $ snd $ toOrdinalDate date :: NominalDiffTime
         in days * nominalDay + realToFrac seconds
+

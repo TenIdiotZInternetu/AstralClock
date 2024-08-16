@@ -9,7 +9,7 @@ class Clock t where
 now :: Clock
 
 -- Returns the next time the clock will be in the given state
-nextTime :: Clock -> UTCTime
+nextTime :: Clock -> Clock
 
 -- Returns the state of clock after the given time passes
 inTime :: Clock -> Clock

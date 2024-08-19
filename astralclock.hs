@@ -7,7 +7,7 @@ type ReferenceTime = UTCTime
 
 minuteDuration = 60
 hourDuration = 60 * minuteDuration
-dayDuration = 24 * dayDuration
+dayDuration = 24 * hourDuration
 
 class Clock c where
     fromUtc :: UTCTime -> c val

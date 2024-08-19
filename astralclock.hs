@@ -6,10 +6,17 @@ import GHC.IO.Encoding (setLocaleEncoding, utf8)
 type ReferenceTime = UTCTime
 
 class Clock c where
-    fromUtc :: c -> UTCTime -> c val
-    toUtc :: c val -> ReferenceTime -> UTCTime
+    fromUtc :: UTCTime -> c val
+    timeAtZero :: c -> ReferenceTime -> UTCTime
     unitInterval :: c -> ReferenceTime -> NominalDiffTime
     revolutionInterval :: c -> ReferenceTime -> NominalDiffTime
+
+
+toUtc :: Clock c => c val -> ReferenceTime -> UTCTime
+toUtc clock value refTime =
+    let unit = unitInterval clock refTime
+        timeAtZero = timeAtZero clock refTime
+    in  addUTCTime (value * unit) timeAtZero
 
 
 -- Returns the state off clock at current time

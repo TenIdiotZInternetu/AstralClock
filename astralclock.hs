@@ -5,6 +5,10 @@ import GHC.IO.Encoding (setLocaleEncoding, utf8)
 
 type ReferenceTime = UTCTime
 
+minuteDuration = 60
+hourDuration = 60 * minuteDuration
+dayDuration = 24 * dayDuration
+
 class Clock c where
     fromUtc :: UTCTime -> c val
     timeAtZero :: c -> ReferenceTime -> UTCTime

@@ -1,34 +1,35 @@
 import Data.Time
 import Data.Time.Calendar.OrdinalDate
 import Data.Fixed (Pico)
+import GHC.IO.Encoding (setLocaleEncoding, utf8)
+
+type ReferenceTime = UTCTime
 
 class Clock c where
-    fromUtc :: UTCTime -> c
-    toInterval :: c -> NominalDiffTime
+    fromUtc :: c -> UTCTime -> c val
+    toUtc :: c val -> ReferenceTime -> UTCTime
+    unitInterval :: c -> ReferenceTime -> NominalDiffTime
+    revolutionInterval :: c -> ReferenceTime -> NominalDiffTime
 
 
 -- Returns the state off clock at current time
-now :: Clock c => IO c
-now = do
-    fromUtc <$> getCurrentTime
+now :: Clock c => c -> IO (c val)
+now clock = do
+    fromUtc clock <$> getCurrentTime
 
 
-
--- Returns the next time the clock will be in the given state
--- nextTime :: Clock -> Clock
--- nextTime 
-
--- Returns the state of clock after the given time passes
-inTime :: Clock c => c -> IO c
-inTime clock = do
-    currentTime <- getCurrentTime
-    let resultTime = addUTCTime (toInterval clock) currentTime
-    return $ fromUtc resultTime
+inTime :: Clock c => c -> NominalDiffTime -> IO (c val)
+inTime clock time = do
+    let newTime = addUTCTime time <$> getCurrentTime
+    return $ fromUtc clock newTime
 
 
-instance Clock UTCTime where
-    fromUtc time = time
-    toInterval (UTCTime date seconds) =
-        let days = fromIntegral $ snd $ toOrdinalDate date :: NominalDiffTime
-        in days * nominalDay + realToFrac seconds
+next :: Clock c => c val -> IO UTCTime
+next clock value = do
+    curTime <- getCurrentTime
+    let doesFullRotation = value < curTime
+    let closestTime = toUtc (clock value) curTime
+
+    return $ if doesFullRotation then closestTime
+             else addUTCTime (revolutionInterval clock curTime) curTime
 

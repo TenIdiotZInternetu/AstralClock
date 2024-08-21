@@ -2,9 +2,10 @@ import Data.Time
 import Data.Time.Calendar.OrdinalDate
 import Data.Fixed (Pico)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
+import Distribution.Utils.Structured (Structure(Nominal))
 
 type ReferenceTime = UTCTime
-type ClockWithValue c = (c, Double)
+type ClockWithValue c = (c, NominalDiffTime)
 
 minuteDuration :: NominalDiffTime
 minuteDuration = 60
@@ -17,17 +18,21 @@ dayDuration = 24 * hourDuration
 
 class Clock c where
     fromUtc :: c -> UTCTime -> ClockWithValue c
-    timeAtZero :: c -> ReferenceTime -> UTCTime
     unitDuration :: c -> ReferenceTime -> NominalDiffTime
     intervalDuration :: c -> ReferenceTime -> NominalDiffTime
 
+
+timeAtZero :: Clock c => c -> ReferenceTime -> UTCTime
+timeAtZero clock refTime =
+    let refClockValue = snd $ fromUtc clock refTime
+        unit = unitDuration clock refTime
+    in addUTCTime (refClockValue * unit * (-1)) refTime
 
 toUtc :: Clock c => ClockWithValue c -> ReferenceTime -> UTCTime
 toUtc (clock, value) refTime =
     let unit = unitDuration clock refTime
         zeroTime = timeAtZero clock refTime
-        timeOnInterval = toInteger (unit * value)
-    in  addUTCTime (timeOnInterval * unit) zeroTime
+    in  addUTCTime (value * unit) zeroTime
 
 
 -- Returns the state off clock at current time
@@ -59,13 +64,6 @@ instance Clock CETClock where
         (CETClock, hour `mod` 12 + 1)
         where hour = secs / hourDuration
 
-    timeAtZero CETClock (UTCTime refDay refSecs) =
-        UTCTime day (23 * hourDuration)
-        where day = if refSecs > 23 * dayDuration then refDay
-                    else refDay - 1
-
     unitDuration CETClock _ = hourDuration
 
     intervalDuration CETClock _ = 24 * hourDuration
-
-    

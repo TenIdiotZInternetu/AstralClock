@@ -10,37 +10,39 @@ hourDuration = 60 * minuteDuration
 dayDuration = 24 * hourDuration
 
 class Clock c where
-    fromUtc :: UTCTime -> c val
+    fromUtc :: c -> UTCTime -> ClockWithValue c
     timeAtZero :: c -> ReferenceTime -> UTCTime
     unitInterval :: c -> ReferenceTime -> NominalDiffTime
     revolutionInterval :: c -> ReferenceTime -> NominalDiffTime
 
 
-toUtc :: Clock c => c val -> ReferenceTime -> UTCTime
-toUtc clock value refTime =
+toUtc :: Clock c => ClockWithValue c -> ReferenceTime -> UTCTime
+toUtc (clock, value) refTime =
     let unit = unitInterval clock refTime
-        timeAtZero = timeAtZero clock refTime
-    in  addUTCTime (value * unit) timeAtZero
+        zeroTime = timeAtZero clock refTime
+        timeOnInterval = toInteger (unit * value)
+    in  addUTCTime (timeOnInterval * unit) zeroTime
 
 
 -- Returns the state off clock at current time
-now :: Clock c => c -> IO (c val)
+now :: Clock c => c -> IO (ClockWithValue c)
 now clock = do
     fromUtc clock <$> getCurrentTime
 
 
-inTime :: Clock c => c -> NominalDiffTime -> IO (c val)
+inTime :: Clock c => c -> NominalDiffTime -> IO (ClockWithValue c)
 inTime clock time = do
-    let newTime = addUTCTime time <$> getCurrentTime
+    newTime <- addUTCTime time <$> getCurrentTime
     return $ fromUtc clock newTime
 
 
-next :: Clock c => c val -> IO UTCTime
-next clock value = do
-    curTime <- getCurrentTime
-    let doesFullRotation = value < curTime
-    let closestTime = toUtc (clock value) curTime
+next :: Clock c => ClockWithValue c -> IO UTCTime
+next (clock, value) = do
+    curValue <- snd <$> now clock
+    curUtcTime <- getCurrentTime
+    let doesFullRotation = value < curValue
+    let timeInCurrentRotation = toUtc (clock, value) curUtcTime
 
-    return $ if doesFullRotation then closestTime
-             else addUTCTime (revolutionInterval clock curTime) curTime
+    return $ if not doesFullRotation then timeInCurrentRotation
+             else addUTCTime (revolutionInterval clock curUtcTime) curUtcTime
 

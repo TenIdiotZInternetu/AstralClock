@@ -1,8 +1,9 @@
+import Data.Fixed (mod', Pico)
 import Data.Time
 import Data.Time.Calendar.OrdinalDate
-import Data.Fixed (Pico)
 import GHC.IO.Encoding (setLocaleEncoding, utf8)
-import Distribution.Utils.Structured (Structure(Nominal))
+
+romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
 
 type ReferenceTime = UTCTime
 type ClockWithValue c = (c, NominalDiffTime)
@@ -61,9 +62,13 @@ next (clock, value) = do
 data CETClock = CETClock
 instance Clock CETClock where
     fromUtc CETClock (UTCTime day secs) =
-        (CETClock, hour `mod` 12 + 1)
-        where hour = secs / hourDuration
+        (CETClock, (hour + 1) `mod'` 12)
+        where hour = max 24 (realToFrac secs / realToFrac hourDuration)
 
     unitDuration CETClock _ = hourDuration
 
     intervalDuration CETClock _ = 24 * hourDuration
+
+instance Show (ClockWithValue CETClock) where
+    show (CETClock, value) =
+        "CET Clock -☞ " ++ (romanNumerals !! floor value)

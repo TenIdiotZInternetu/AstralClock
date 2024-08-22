@@ -40,7 +40,7 @@ timeAtZero :: Clock c => c -> ReferenceTime -> UTCTime
 timeAtZero clock refTime =
     let Clock _ refClockValue = fromUtc clock refTime
         unit = unitDuration clock refTime
-    in addUTCTime (refClockValue * unit * (-1)) refTime
+    in addUTCTime (refClockValue * (-unit)) refTime
 
 
 -- Returns UTC time that corresponds to the value shown on the specified clock,

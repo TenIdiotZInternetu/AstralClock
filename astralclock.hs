@@ -96,7 +96,7 @@ instance Clock CETClock where
 
     unitDuration CETClock _ = hourDuration
 
-    intervalDuration CETClock _ = 24 * hourDuration
+    intervalDuration CETClock _ = 12 * hourDuration
 
 
 instance Show (ClockWithValue CETClock) where
@@ -112,6 +112,17 @@ instance Show (ClockWithValue CETClock) where
 -- pointing to the Arabian numerals on the outer dial
 
 -- Valid values are 0-22 mapped to 1-23 Arabian numerals
+
+data OldCzechClock = OldCzechClock
+
+instance Clock OldCzechClock where
+    fromUtc OldCzechClock (UTCTime day secs) = 
+
+
+    unitDuration OldCzechClock _ = hourDuration
+
+    intervalDuration OldCzechClock _ = dayDuration
+
 
 -------------------------------- Helping functions --------------------------------
 -----------------------------------------------------------------------------------

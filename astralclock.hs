@@ -1,12 +1,15 @@
 import Data.Fixed (mod', Pico)
 import Data.Time
 import Data.Time.Calendar.OrdinalDate
-import System.IO (hSetEncoding, stdout, utf8)
 import Prelude hiding (truncate)
 
 romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
 
+-- Specifies which  time interval should be considered for further calculations
 type ReferenceTime = UTCTime
+
+-- A clock type and clock value pair
+-- Clock c =>
 data ClockWithValue c = Clock c NominalDiffTime
 
 minuteDuration :: NominalDiffTime
@@ -18,12 +21,21 @@ hourDuration = 60 * minuteDuration
 dayDuration :: NominalDiffTime
 dayDuration = 24 * hourDuration
 
+
 class Clock c where
+    -- Returns clock of specified type with value corresponding to the UTC
     fromUtc :: c -> UTCTime -> ClockWithValue c
+
+    -- Returns duration of a single unit of the specified clock,
+    -- on interval specified by the ReferenceTime
     unitDuration :: c -> ReferenceTime -> NominalDiffTime
+
+    -- Return total duration of a single interval specified by the ReferenceTime, on the specified clock
     intervalDuration :: c -> ReferenceTime -> NominalDiffTime
 
 
+-- Returns UTC time at which the specified clock has the value 0,
+-- on interval specified by the ReferenceTime
 timeAtZero :: Clock c => c -> ReferenceTime -> UTCTime
 timeAtZero clock refTime =
     let Clock _ refClockValue = fromUtc clock refTime
@@ -31,6 +43,8 @@ timeAtZero clock refTime =
     in addUTCTime (refClockValue * unit * (-1)) refTime
 
 
+-- Returns UTC time that corresponds to the value shown on the specified clock,
+-- on interval specified by the ReferenceTime
 toUtc :: Clock c => ClockWithValue c -> ReferenceTime -> UTCTime
 toUtc (Clock clock value) refTime =
     let unit = unitDuration clock refTime
@@ -38,18 +52,21 @@ toUtc (Clock clock value) refTime =
     in  addUTCTime (value * unit) zeroTime
 
 
--- Returns the state off clock at current time
+-- Returns the clock and its value at the current time
 now :: Clock c => c -> IO (ClockWithValue c)
 now clock = do
     fromUtc clock <$> getCurrentTime
 
 
+-- Returns the clock and its value at NominalDiffTime in the future
 inTime :: Clock c => c -> NominalDiffTime -> IO (ClockWithValue c)
 inTime clock time = do
     newTime <- addUTCTime time <$> getCurrentTime
     return $ fromUtc clock newTime
 
 
+-- Returns nearest UTC time in the future,
+-- at which the specified clock shows the given value
 next :: Clock c => ClockWithValue c -> IO UTCTime
 next (Clock clock value) = do
     Clock _ curValue <- now clock
@@ -60,6 +77,14 @@ next (Clock clock value) = do
     return $ if not doesFullRotation then timeInCurrentRotation
              else addUTCTime (intervalDuration clock curUtcTime) curUtcTime
 
+------------------------------ Clock Implementations ------------------------------
+-----------------------------------------------------------------------------------
+
+-- Central European Time, 
+-- On Prague Astral Clock its shown by the hand with finger at the tip,
+-- pointing to the Roman numerals on the innermost dial
+
+-- Valid values are 0-11 mapped to I-XII roman numerals
 
 data CETClock = CETClock
 instance Clock CETClock where
@@ -80,12 +105,14 @@ instance Show (ClockWithValue CETClock) where
 
 -------------------------------- Helping functions --------------------------------
 -----------------------------------------------------------------------------------
+
+-- Floors the number to n decimal places
 truncate :: RealFrac num => num -> Int -> num
 truncate number decimals = 
     fromIntegral (floor (number * t)) / t
         where t = 10^decimals
 
-
+-- Turn only the decimal part of number to string
 showDecimals :: (RealFrac num, Show num) => num -> String
 showDecimals number =
     let decimalPart = snd $ properFraction number

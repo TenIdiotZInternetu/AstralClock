@@ -80,11 +80,13 @@ next (Clock clock value) = do
 ------------------------------ Clock Implementations ------------------------------
 -----------------------------------------------------------------------------------
 
--- Central European Time, 
--- On Prague Astral Clock its shown by the hand with finger at the tip,
--- pointing to the Roman numerals on the innermost dial
+-- Central European Time  -  UTC+1
+-- Clock is divided into 12 equal parts, two full rotations add up to one day
 
--- Valid values are 0-11 mapped to I-XII roman numerals
+-- On Prague Astral Clock its shown by the hand with finger at the tip,
+-- pointing to the Roman numerals on the inner dial
+
+-- Valid values are 0-11 mapped to I-XII Roman numerals
 
 data CETClock = CETClock
 instance Clock CETClock where
@@ -102,6 +104,14 @@ instance Show (ClockWithValue CETClock) where
         "CET Clock -> " ++ (romanNumerals !! floor value) ++ "   ." ++ decimals
             where decimals = showDecimals $ realToFrac $ truncate value 3 `mod'` 1
 
+
+-- Old Czech Time  -  https://cs.wikipedia.org/wiki/Vlašské_hodiny
+-- Day starts at sunset, with 1 as its first value, and is divided into 24 equal parts
+
+-- On Prague Astral Clock its shown by the hand with finger at the tip,
+-- pointing to the Arabian numerals on the outer dial
+
+-- Valid values are 0-22 mapped to 1-23 Arabian numerals
 
 -------------------------------- Helping functions --------------------------------
 -----------------------------------------------------------------------------------

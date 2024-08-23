@@ -116,8 +116,11 @@ instance Show (ClockWithValue CETClock) where
 data OldCzechClock = OldCzechClock
 
 instance Clock OldCzechClock where
-    fromUtc OldCzechClock (UTCTime day secs) = 
-
+    fromUtc OldCzechClock utc = 
+        let clockLocation = Location 50.0871926344538 14.420705898132919
+            sunsetTime = sunset (utcToZonedTime (TimeZone 1) utc) clockLocation
+            (UTCTime _ secsSinceSunset) = diffUTCTime utc sunsetTime
+        in min 24 (realToFrac secsSinceSunset / realToFrac hourDuration)
 
     unitDuration OldCzechClock _ = hourDuration
 

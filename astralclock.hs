@@ -32,6 +32,18 @@ data Circle = Circle Point Float
 origin :: Point
 origin = Cartesian 0 0
 
+toCartesian :: Point -> Point
+toCartesian (Polar radius angle) = Cartesian (radius * cos angle) (radius * sin angle)
+toCartesian (Cartesian x y) = Cartesian x y
+
+toPolar :: Point -> Point
+toPolar (Cartesian x y) = Polar (pythagorean x y) (atan2 y x)
+toPolar (Polar radius angle) = Polar radius angle
+
+
+-- Computes the length of hypotenuse from the Pythagorean theorem
+pythagorean :: Float -> Float -> Float
+pythagorean a b = sqrt (a^2 + b^2)
 
 -------------------------------- Astrolabe --------------------------------
 ---------------------------------------------------------------------------
@@ -68,7 +80,6 @@ newtype Gear = Gear NominalDiffTime
 
 angularSpeed :: Gear -> Float
 angularSpeed (Gear revolution) = realToFrac (2 * pi) / realToFrac revolution
-
 
 
 sunGear :: Gear

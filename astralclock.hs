@@ -28,6 +28,9 @@ data Point = Cartesian Float Float | Polar Float Float
 -- Circle (center, radius)
 data Circle = Circle Point Float
 
+-- Ray (ray origin, another point it passes through)
+data Ray = Ray Point Point
+
 
 origin :: Point
 origin = Cartesian 0 0

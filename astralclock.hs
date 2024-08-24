@@ -95,26 +95,19 @@ scaleVector t (Vec2 x y) = Vec2 (t * x) (t * y)
 dot :: Vec2 -> Vec2 -> Float
 dot (Vec2 x1 y1) (Vec2 x2 y2) = x1 * x2 + y1 * y2
 
+magnitude :: Vec2 -> Float
+magnitude (Vec2 x y) = pythagorean x y
 
--- + -------------------------------------------------------------------- + --
+-- Returns angle in radians, as if the point was in polar coordinates
+azimuth :: Vec2 -> Float
+azimuth (Vec2 x y) = atan2 y x
 
--- Cartesian (x, y) | Polar (radius, angle in radians)
-data Point = Cartesian Float Float | Polar Float Float
+normalized :: Vec2 -> Vec2
+normalized v = scaleVector (1 / magnitude v) v
 
-toVec2 :: Point -> Vec2
-toVec2 point = Vec2 x y
-    where (Cartesian x y) = toCartesian point
-
-origin :: Point
-origin = Cartesian 0 0
-
-toCartesian :: Point -> Point
-toCartesian (Polar radius angle) = Cartesian (radius * cos angle) (radius * sin angle)
-toCartesian (Cartesian x y) = Cartesian x y
-
-toPolar :: Point -> Point
-toPolar (Cartesian x y) = Polar (pythagorean x y) (atan2 y x)
-toPolar (Polar radius angle) = Polar radius angle
+-- Returns vector of magnitude 1, with azimuth given in radians
+unitVector :: Float -> Vec2
+unitVector angle = Vec2 (cos angle) (sin angle)
 
 
 -- + -------------------------------------------------------------------- + --

@@ -2,7 +2,7 @@ import Data.Fixed (mod', Pico)
 import Data.Time
 import Data.Time.Calendar.OrdinalDate
 import Prelude hiding (truncate)
-import Data.Maybe (isNothing)
+import Data.Maybe (isNothing, fromJust)
 
 romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
 
@@ -84,15 +84,18 @@ calendarGear = Gear $ 365 * dayDuration
 -- [[ ------------------------------------------------------------------ ]] --
 
 class Clock c where
-    clockGear :: c -> Gear
-    value :: ClockValue val c => Float -> val c
-    epoch :: c -> UTCTime
+    fromUtc :: c -> UTCTime
 
-class ClockValue val c where
-    clock :: Clock c => val c -> c
+class ClockValue val where
+    clock :: Clock c => val -> c
 
 
+data CETClock = CETClock
+-- instance Clock CETClock where
+--     clockGear _ = sunGear
+--     value _ angle = 
 
+newtype CETClockValue = CETClockVal Float
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
@@ -172,6 +175,16 @@ rayCircleIntersection ray (Circle center radius) =
 
     in  points roots
 
+circlesIntersection :: Circle -> Circle -> Maybe (Vec2, Vec2)
+circlesIntersection (Circle (Vec2 x1 y1) r1) (Circle (Vec2 x2 y2) r2) =
+    let c = (- x1^2 + x2^2 - y1^2 + y2^2 + r1^2 - r2^2) / (2 * (x2 - x1)) - x1
+        d = (y2 - y1) / (x2 - x1)
+
+        yRoots = quadraticFormula (d^2 + 1) (-2 * c * d - 2 * y1) (-r1^2 + c^2 + y1^2) 
+        xFromY y = (c + x1) - d * y
+
+    in  if isNothing yRoots then Nothing
+        else Just $ mapTuple (\ y -> Vec2 (xFromY y) y) (fromJust yRoots)
 
 -- + -------------------------------------------------------------------- + --
 
@@ -188,3 +201,9 @@ quadraticFormula a b c =
 -- Computes the length of hypotenuse from the Pythagorean theorem
 pythagorean :: Float -> Float -> Float
 pythagorean a b = sqrt (a^2 + b^2)
+
+
+-- + -------------------------------------------------------------------- + --
+
+mapTuple :: (a -> b) -> (a, a) -> (b, b)
+mapTuple f (a, b) = (f a, f b)

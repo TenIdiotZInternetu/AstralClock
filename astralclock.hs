@@ -30,11 +30,20 @@ data Circle = Circle Point Float
 -- Ray (ray origin, direction unit Vector)
 data Ray = Ray Point Vec2
 
-origin :: Point
-origin = Cartesian 0 0
+-- 2D Vector (x coordinate, y coordinate)
+data Vec2 = Vec2 Float Float
 
-origin :: Vec2
-origin = Vec2 0 0
+addVectors :: Vec2 -> Vec2 -> Vec2
+addVectors (Vec2 x1 y1) (Vec2 x2 y2) = Vec2 (x1 + y1) (x2 + y2)
+
+negVector :: Vec2 -> Vec2
+negVector (Vec2 x y) = Vec2 (-x) (-y)
+
+subVectors :: Vec2 -> Vec2 -> Vec2
+subVectors v1 v2 = addVectors v1 (negVector v2)
+
+dot :: Vec2 -> Vec2 -> Float
+dot (Vec2 x1 y1) (Vec2 x2 y2) = x1 * x2 + y1 * y2
 
 toVec2 :: Point -> Vec2
 toVec2 point = Vec2 x y

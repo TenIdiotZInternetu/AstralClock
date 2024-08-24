@@ -70,7 +70,8 @@ rayCircleIntersection (Ray orig direction) (Circle center radius) =
 quadraticFormula :: Float -> Float -> Float -> Maybe (Float, Float)
 quadraticFormula a b c =
     let d = b^2 - 4 * a * c
-    in  ((-b + sqrt d) / 2 * a,
+    in  if d < 0 then Nothing
+        else ((-b + sqrt d) / 2 * a,
          (-b - sqrt d) / 2 * a)
 
 -------------------------------- Astrolabe --------------------------------

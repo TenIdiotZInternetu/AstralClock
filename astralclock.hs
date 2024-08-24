@@ -115,8 +115,8 @@ unitVector angle = Vec2 (cos angle) (sin angle)
 data Ray = Ray Vec2 Vec2
 
 -- Return point lying on ray at specified parameter t
-rayPointAt :: Ray -> Float -> Point
-rayPointAt (Ray origin direction) t = addVectors origin (scaleVec t direction) 
+rayPointAt :: Ray -> Float -> Vec2
+rayPointAt (Ray origin direction) t = addVectors origin (scaleVector t direction) 
 
 
 -- + -------------------------------------------------------------------- + --
@@ -128,27 +128,24 @@ data Circle = Circle Vec2 Float
 -- Returns intersections of ray and circle if they exist, return Nothing if not
 -- First point is closer to the ray origin, second is further.
 rayCircleIntersection :: Ray -> Circle -> Maybe (Vec2, Maybe Vec2)
-rayCircleIntersection (Ray origin direction) (Circle center radius) =
-    let shiftVec = subVectors origin center
+rayCircleIntersection ray (Circle center radius) =
+    let (Ray origin direction) = ray
+        shiftVec = subVectors origin center
         a = dot shiftVec shiftVec
         b = 2 * dot shiftVec direction
         c = dot direction direction - radius^2
         roots = quadraticFormula a b c
 
-        params | isNothing roots = Nothing
-               | fromJust roots == (doubleRoot, doubleRoot) =
-                    if doubleRoot < 0 then Nothing
-                    else ()
-            
-            
-            let closer = minFloat root1 root2
-                     further = maxFloat root1 root2
+        points Nothing = Nothing
+        points (Just (root1, root2)) =
+            let closer = min root1 root2
+                further = min root1 root2
                  in  if further < 0 then Nothing
-                     else if closer < 0 then (further, further)
-                     else (closer, further)
+                else if closer < 0 then Just (rayPointAt ray further, Nothing)
+                else if closer == further then Just (rayPointAt ray closer, Nothing)
+                else Just (rayPointAt ray closer, Just $ rayPointAt ray further)
 
-    in  if isNothing (params roots) then Nothing
-        else map (\ t -> toVec2 orig + t * direction) params
+    in  points roots
 
 
 -- + -------------------------------------------------------------------- + --
@@ -159,8 +156,8 @@ quadraticFormula :: Float -> Float -> Float -> Maybe (Float, Float)
 quadraticFormula a b c =
     let d = b^2 - 4 * a * c
     in  if d < 0 then Nothing
-        else ((-b + sqrt d) / 2 * a,
-              (-b - sqrt d) / 2 * a)
+        else Just ((-b + sqrt d) / (2 * a),
+                   (-b - sqrt d) / (2 * a))
 
 -- Computes the length of hypotenuse from the Pythagorean theorem
 pythagorean :: Float -> Float -> Float

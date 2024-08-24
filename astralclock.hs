@@ -5,8 +5,8 @@ import Prelude hiding (truncate)
 
 romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
 
------------------------------ Time Constants ------------------------------
----------------------------------------------------------------------------
+-- [[ ------------------------ Time Constants -------------------------- ]] --
+-- [[ ------------------------------------------------------------------ ]] --
 
 minuteDuration :: NominalDiffTime
 minuteDuration = 60
@@ -18,73 +18,10 @@ dayDuration :: NominalDiffTime
 dayDuration = 24 * minuteDuration
 
 
--------------------------------- Geometry ---------------------------------
----------------------------------------------------------------------------
+-- [[ -------------------------- Astrolabe ----------------------------- ]] --
+-- [[ ------------------------------------------------------------------ ]] --
 
--- Cartesian (x, y) | Polar (radius, angle in radians)
-data Point = Cartesian Float Float | Polar Float Float
-
--- Circle (center, radius)
-data Circle = Circle Point Float
-
--- Ray (ray origin, direction unit Vector)
-data Ray = Ray Point Vec2
-
--- 2D Vector (x coordinate, y coordinate)
-data Vec2 = Vec2 Float Float
-
-addVectors :: Vec2 -> Vec2 -> Vec2
-addVectors (Vec2 x1 y1) (Vec2 x2 y2) = Vec2 (x1 + y1) (x2 + y2)
-
-negVector :: Vec2 -> Vec2
-negVector (Vec2 x y) = Vec2 (-x) (-y)
-
-subVectors :: Vec2 -> Vec2 -> Vec2
-subVectors v1 v2 = addVectors v1 (negVector v2)
-
-dot :: Vec2 -> Vec2 -> Float
-dot (Vec2 x1 y1) (Vec2 x2 y2) = x1 * x2 + y1 * y2
-
-toVec2 :: Point -> Vec2
-toVec2 point = Vec2 x y
-    where (Cartesian x y) = toCartesian point
-
-
-toCartesian :: Point -> Point
-toCartesian (Polar radius angle) = Cartesian (radius * cos angle) (radius * sin angle)
-toCartesian (Cartesian x y) = Cartesian x y
-
-toPolar :: Point -> Point
-toPolar (Cartesian x y) = Polar (pythagorean x y) (atan2 y x)
-toPolar (Polar radius angle) = Polar radius angle
-
-
--- Computes the length of hypotenuse from the Pythagorean theorem
-pythagorean :: Float -> Float -> Float
-pythagorean a b = sqrt (a^2 + b^2)
-
-
--- Returns intersections of ray and circle if they exist, return Nothing if not
--- First point is closer to the ray origin, second is further.
-rayCircleIntersection :: Ray -> Circle -> Maybe (Point, Point)
-rayCircleIntersection (Ray orig direction) (Circle center radius) =
-    let originVec = toVec2 orig
-        a = dot originVec originVec
-        b = 2 * dot originVec direction
-        c = dot direction direction
-
-
--- Solves x for ax^2 + bx + c = 0
--- Returnes both solutions if they exist, returns Nothing if none exist
-quadraticFormula :: Float -> Float -> Float -> Maybe (Float, Float)
-quadraticFormula a b c =
-    let d = b^2 - 4 * a * c
-    in  if d < 0 then Nothing
-        else ((-b + sqrt d) / 2 * a,
-         (-b - sqrt d) / 2 * a)
-
--------------------------------- Astrolabe --------------------------------
----------------------------------------------------------------------------
+-- Constants are gained from constructing the Astrolabe in Geogebra
 
 cancerTropic :: Circle
 cancerTropic = Circle origin 1
@@ -95,13 +32,14 @@ equator = Circle origin 0.6556
 ariesTropic :: Circle
 ariesTropic = Circle origin 4.298
 
+-- Horizon and twilight lines are dependent on the astrolabe's latitude
+-- These value are given by latitude of the Prague Astronomical Clock (50.0871°)
 
 horizonLine :: Circle
 horizonLine = Circle (Cartesian 0.0 (-0.7838)) 1.0219
 
 twilightLine :: Circle
 twilightLine = Circle (Cartesian 0.0 (-0.5385)) 0.7083
-
 
 zodiacRadius :: Float
 zodiacRadius = 0.7149
@@ -110,8 +48,8 @@ zodiacDistanceFromOrigin :: Float
 zodiacDistanceFromOrigin = 0.2851
 
 
------------------------------------ Gears -----------------------------------
------------------------------------------------------------------------------
+-- [[ ---------------------------- Gears ------------------------------- ]] --
+-- [[ ------------------------------------------------------------------ ]] --
 
 -- Gear (revolution duration)
 newtype Gear = Gear NominalDiffTime
@@ -134,3 +72,101 @@ moonPhaseGear = Gear $ 29.5305 * dayDuration
 
 calendarGear :: Gear
 calendarGear = Gear $ 365 * dayDuration
+
+
+-- [[ --------------------------- Geometry ----------------------------- ]] --
+-- [[ ------------------------------------------------------------------ ]] --
+
+-- 2D Vector (x coordinate, y coordinate)
+data Vec2 = Vec2 Float Float
+
+addVectors :: Vec2 -> Vec2 -> Vec2
+addVectors (Vec2 x1 y1) (Vec2 x2 y2) = Vec2 (x1 + y1) (x2 + y2)
+
+negVector :: Vec2 -> Vec2
+negVector (Vec2 x y) = Vec2 (-x) (-y)
+
+subVectors :: Vec2 -> Vec2 -> Vec2
+subVectors v1 v2 = addVectors v1 (negVector v2)
+
+dot :: Vec2 -> Vec2 -> Float
+dot (Vec2 x1 y1) (Vec2 x2 y2) = x1 * x2 + y1 * y2
+
+
+-- + -------------------------------------------------------------------- + --
+
+-- Cartesian (x, y) | Polar (radius, angle in radians)
+data Point = Cartesian Float Float | Polar Float Float
+
+toVec2 :: Point -> Vec2
+toVec2 point = Vec2 x y
+    where (Cartesian x y) = toCartesian point
+
+origin :: Point
+origin = Cartesian 0 0
+
+toCartesian :: Point -> Point
+toCartesian (Polar radius angle) = Cartesian (radius * cos angle) (radius * sin angle)
+toCartesian (Cartesian x y) = Cartesian x y
+
+toPolar :: Point -> Point
+toPolar (Cartesian x y) = Polar (pythagorean x y) (atan2 y x)
+toPolar (Polar radius angle) = Polar radius angle
+
+
+-- + -------------------------------------------------------------------- + --
+
+-- Ray (ray origin, direction unit Vector)
+data Ray = Ray Point Vec2
+
+-- Return point lying on ray at specified parameter t
+rayPointAt :: Ray -> Float -> Point
+rayPointAt (Ray orig direction) t =
+
+
+-- + -------------------------------------------------------------------- + --
+
+-- Circle (center, radius)
+data Circle = Circle Point Float
+
+
+-- Returns intersections of ray and circle if they exist, return Nothing if not
+-- First point is closer to the ray origin, second is further.
+rayCircleIntersection :: Ray -> Circle -> Maybe (Point, Maybe Point)
+rayCircleIntersection (Ray orig direction) (Circle center radius) =
+    let shiftVec = toVec2 orig - toVec2 center
+        a = dot shiftVec shiftVec
+        b = 2 * dot shiftVec direction
+        c = dot (direction direction) - radius^2
+        roots = quadraticFormula a b c
+
+        params | isNothing roots = Nothing
+               | fromJust roots == (doubleRoot, doubleRoot) =
+                    if doubleRoot < 0 then Nothing
+                    else 
+            
+            
+            let closer = minFloat root1 root2
+                     further = maxFloat root1 root2
+                 in  if further < 0 then Nothing
+                     else if closer < 0 then (further, further)
+                     else (closer, further)
+
+    in  if isNothing (params roots) then Nothing
+        else map (\ t -> toVec2 orig + t * direction) params
+
+
+-- + -------------------------------------------------------------------- + --
+
+-- Solves x for ax^2 + bx + c = 0
+-- Returnes both solutions if they exist, returns Nothing if none exist
+quadraticFormula :: Float -> Float -> Float -> Maybe (Float, Float)
+quadraticFormula a b c =
+    let d = b^2 - 4 * a * c
+    in  if d < 0 then Nothing
+        else ((-b + sqrt d) / 2 * a,
+              (-b - sqrt d) / 2 * a)
+
+-- Computes the length of hypotenuse from the Pythagorean theorem
+pythagorean :: Float -> Float -> Float
+pythagorean a b = sqrt (a^2 + b^2)

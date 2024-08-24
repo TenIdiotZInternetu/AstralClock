@@ -81,7 +81,7 @@ calendarGear = Gear $ 365 * dayDuration
 data Vec2 = Vec2 Float Float
 
 addVectors :: Vec2 -> Vec2 -> Vec2
-addVectors (Vec2 x1 y1) (Vec2 x2 y2) = Vec2 (x1 + y1) (x2 + y2)
+addVectors (Vec2 x1 y1) (Vec2 x2 y2) = Vec2 (x1 + x2) (y1 + y2)
 
 negVector :: Vec2 -> Vec2
 negVector (Vec2 x y) = Vec2 (-x) (-y)
@@ -136,15 +136,15 @@ rayCircleIntersection :: Ray -> Circle -> Maybe (Vec2, Maybe Vec2)
 rayCircleIntersection ray (Circle center radius) =
     let (Ray origin direction) = ray
         shiftVec = subVectors origin center
-        a = dot shiftVec shiftVec
+        a = dot direction direction
         b = 2 * dot shiftVec direction
-        c = dot direction direction - radius^2
+        c = dot shiftVec shiftVec - radius^2
         roots = quadraticFormula a b c
 
         points Nothing = Nothing
         points (Just (root1, root2)) =
             let closer = min root1 root2
-                further = min root1 root2
+                further = max root1 root2
             in  if further < 0 then Nothing
                 else if closer < 0 then Just (rayPointAt ray further, Nothing)
                 else if closer == further then Just (rayPointAt ray closer, Nothing)

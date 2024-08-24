@@ -58,6 +58,12 @@ newtype Gear = Gear NominalDiffTime
 angularSpeed :: Gear -> Float
 angularSpeed (Gear revolution) = realToFrac (2 * pi) / realToFrac revolution
 
+-- Returns angular distance (radians) the gear rotated in given time
+rotationAfterTime :: Gear -> NominalDiffTime -> Float
+rotationAfterTime gear time = realToFrac time * angularSpeed gear
+
+-- + -------------------------------------------------------------------- + --
+
 sunGear :: Gear
 sunGear = Gear dayDuration
 
@@ -72,6 +78,12 @@ moonPhaseGear = Gear $ 29.5305 * dayDuration
 
 calendarGear :: Gear
 calendarGear = Gear $ 365 * dayDuration
+
+
+-- [[ --------------------------- Clocks ------------------------------- ]] --
+-- [[ ------------------------------------------------------------------ ]] --
+
+
 
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --

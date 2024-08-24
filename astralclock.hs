@@ -161,6 +161,7 @@ quadraticFormula :: Float -> Float -> Float -> Maybe (Float, Float)
 quadraticFormula a b c =
     let d = b^2 - 4 * a * c
     in  if d < 0 then Nothing
+        else if a == 0 then Just ((-c) / b, (-c) /b)
         else Just ((-b + sqrt d) / (2 * a),
                    (-b - sqrt d) / (2 * a))
 

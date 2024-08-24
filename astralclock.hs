@@ -57,7 +57,6 @@ newtype Gear = Gear NominalDiffTime
 angularSpeed :: Gear -> Float
 angularSpeed (Gear revolution) = realToFrac (2 * pi) / realToFrac revolution
 
-
 sunGear :: Gear
 sunGear = Gear dayDuration
 
@@ -113,26 +112,27 @@ unitVector angle = Vec2 (cos angle) (sin angle)
 -- + -------------------------------------------------------------------- + --
 
 -- Ray (ray origin, direction unit Vector)
-data Ray = Ray Point Vec2
+data Ray = Ray Vec2 Vec2
 
 -- Return point lying on ray at specified parameter t
 rayPointAt :: Ray -> Float -> Point
-rayPointAt (Ray orig direction) t = addVectors (toVec2 point) (scaleVec t direction) 
+rayPointAt (Ray origin direction) t = addVectors origin (scaleVec t direction) 
+
 
 -- + -------------------------------------------------------------------- + --
 
 -- Circle (center, radius)
-data Circle = Circle Point Float
+data Circle = Circle Vec2 Float
 
 
 -- Returns intersections of ray and circle if they exist, return Nothing if not
 -- First point is closer to the ray origin, second is further.
-rayCircleIntersection :: Ray -> Circle -> Maybe (Point, Maybe Point)
-rayCircleIntersection (Ray orig direction) (Circle center radius) =
-    let shiftVec = toVec2 orig - toVec2 center
+rayCircleIntersection :: Ray -> Circle -> Maybe (Point, Maybe Vec2)
+rayCircleIntersection (Ray origin direction) (Circle center radius) =
+    let shiftVec = subVectors origin center
         a = dot shiftVec shiftVec
         b = 2 * dot shiftVec direction
-        c = dot (direction direction) - radius^2
+        c = dot direction direction - radius^2
         roots = quadraticFormula a b c
 
         params | isNothing roots = Nothing

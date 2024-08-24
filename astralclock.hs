@@ -89,6 +89,9 @@ negVector (Vec2 x y) = Vec2 (-x) (-y)
 subVectors :: Vec2 -> Vec2 -> Vec2
 subVectors v1 v2 = addVectors v1 (negVector v2)
 
+scaleVector :: Float -> Vec2 -> Vec2
+scaleVector t (Vec2 x y) = Vec2 (t * x) (t * y)
+
 dot :: Vec2 -> Vec2 -> Float
 dot (Vec2 x1 y1) (Vec2 x2 y2) = x1 * x2 + y1 * y2
 
@@ -121,8 +124,7 @@ data Ray = Ray Point Vec2
 
 -- Return point lying on ray at specified parameter t
 rayPointAt :: Ray -> Float -> Point
-rayPointAt (Ray orig direction) t =
-
+rayPointAt (Ray orig direction) t = addVectors (toVec2 point) (scaleVec t direction) 
 
 -- + -------------------------------------------------------------------- + --
 

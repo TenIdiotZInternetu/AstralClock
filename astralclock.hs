@@ -112,6 +112,8 @@ unitVector angle = Vec2 (cos angle) (sin angle)
 originPoint :: Vec2
 originPoint = Vec2 0 0
 
+instance Show Vec2 where 
+    show (Vec2 x y) = "[" ++ show x ++ ", " ++ show y ++ "]"
 
 -- + -------------------------------------------------------------------- + --
 

@@ -127,7 +127,7 @@ data Circle = Circle Vec2 Float
 
 -- Returns intersections of ray and circle if they exist, return Nothing if not
 -- First point is closer to the ray origin, second is further.
-rayCircleIntersection :: Ray -> Circle -> Maybe (Point, Maybe Vec2)
+rayCircleIntersection :: Ray -> Circle -> Maybe (Vec2, Maybe Vec2)
 rayCircleIntersection (Ray origin direction) (Circle center radius) =
     let shiftVec = subVectors origin center
         a = dot shiftVec shiftVec
@@ -138,7 +138,7 @@ rayCircleIntersection (Ray origin direction) (Circle center radius) =
         params | isNothing roots = Nothing
                | fromJust roots == (doubleRoot, doubleRoot) =
                     if doubleRoot < 0 then Nothing
-                    else 
+                    else ()
             
             
             let closer = minFloat root1 root2

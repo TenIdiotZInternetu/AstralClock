@@ -83,6 +83,14 @@ calendarGear = Gear $ 365 * dayDuration
 -- [[ --------------------------- Clocks ------------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
 
+class Clock c where
+    clockGear :: c -> Gear
+    value :: ClockValue val c => Float -> val c
+    epoch :: c -> UTCTime
+
+class ClockValue val c where
+    clock :: Clock c => val c -> c
+
 
 
 

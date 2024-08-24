@@ -2,6 +2,7 @@ import Data.Fixed (mod', Pico)
 import Data.Time
 import Data.Time.Calendar.OrdinalDate
 import Prelude hiding (truncate)
+import Data.Maybe (isNothing)
 
 romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
 
@@ -24,22 +25,22 @@ dayDuration = 24 * minuteDuration
 -- Constants are gained from constructing the Astrolabe in Geogebra
 
 cancerTropic :: Circle
-cancerTropic = Circle origin 1
+cancerTropic = Circle originPoint 1
 
 equator :: Circle
-equator = Circle origin 0.6556
+equator = Circle originPoint 0.6556
 
 ariesTropic :: Circle
-ariesTropic = Circle origin 4.298
+ariesTropic = Circle originPoint 4.298
 
 -- Horizon and twilight lines are dependent on the astrolabe's latitude
 -- These value are given by latitude of the Prague Astronomical Clock (50.0871°)
 
 horizonLine :: Circle
-horizonLine = Circle (Cartesian 0.0 (-0.7838)) 1.0219
+horizonLine = Circle (Vec2 0.0 (-0.7838)) 1.0219
 
 twilightLine :: Circle
-twilightLine = Circle (Cartesian 0.0 (-0.5385)) 0.7083
+twilightLine = Circle (Vec2 0.0 (-0.5385)) 0.7083
 
 zodiacRadius :: Float
 zodiacRadius = 0.7149
@@ -108,6 +109,9 @@ normalized v = scaleVector (1 / magnitude v) v
 unitVector :: Float -> Vec2
 unitVector angle = Vec2 (cos angle) (sin angle)
 
+originPoint :: Vec2
+originPoint = Vec2 0 0
+
 
 -- + -------------------------------------------------------------------- + --
 
@@ -124,7 +128,6 @@ rayPointAt (Ray origin direction) t = addVectors origin (scaleVector t direction
 -- Circle (center, radius)
 data Circle = Circle Vec2 Float
 
-
 -- Returns intersections of ray and circle if they exist, return Nothing if not
 -- First point is closer to the ray origin, second is further.
 rayCircleIntersection :: Ray -> Circle -> Maybe (Vec2, Maybe Vec2)
@@ -140,7 +143,7 @@ rayCircleIntersection ray (Circle center radius) =
         points (Just (root1, root2)) =
             let closer = min root1 root2
                 further = min root1 root2
-                 in  if further < 0 then Nothing
+            in  if further < 0 then Nothing
                 else if closer < 0 then Just (rayPointAt ray further, Nothing)
                 else if closer == further then Just (rayPointAt ray closer, Nothing)
                 else Just (rayPointAt ray closer, Just $ rayPointAt ray further)

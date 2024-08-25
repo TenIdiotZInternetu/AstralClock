@@ -1,8 +1,10 @@
+{-# LANGUAGE TypeFamilies #-}
 import Data.Fixed (mod', Pico)
 import Data.Time
 import Data.Time.Calendar.OrdinalDate
 import Prelude hiding (truncate)
 import Data.Maybe (isNothing, fromJust)
+import Distribution.Compat.Time (getCurTime)
 
 romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
 
@@ -109,22 +111,27 @@ calendarGear = Gear duration epoch
 -- [[ ------------------------------------------------------------------ ]] --
 
 class Clock c where
-    -- Time at which all associated gears of the clock point upwards
-    epoch :: c -> UTCTime
+    type ClockValue c
+    fromUtc :: c -> UTCTime -> ClockValue c
 
-    -- Gets the 
-    fromUtc :: ClockValue val => c -> UTCTime -> val
+now :: Clock c => c -> IO (ClockValue c)
+now clock = do
+    fromUtc clock <$> getCurrentTime
 
-class ClockValue val where
-    clock :: Clock c => val -> c
-
+-- + -------------------------------------------------------------------- + --
 
 data CETClock = CETClock
--- instance Clock CETClock where
---     clockGear _ = sunGear
---     value _ angle = 
+instance Clock CETClock where
+    type ClockValue CETClock = CETClockValue
+    fromUtc :: CETClock -> UTCTime -> CETClockValue
+    fromUtc CETClock utc = CETClockVal hour
+        where unit = pi / 12
+              hour = angleAtTime sunGear utc / unit `mod'` 12
+
 
 newtype CETClockValue = CETClockVal Float
+instance Show CETClockValue where
+    show (CETClockVal val) = show val
 
 -- + -------------------------------------------------------------------- + --
 

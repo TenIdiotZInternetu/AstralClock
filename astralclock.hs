@@ -58,9 +58,7 @@ zodiacDistanceFromOrigin = 0.2851
 
 -- Time at which a gear is in its default poistion is called an epoch
 -- Usually its a time when the gear's hand points directly upwards.
--- The angle the gear is rotated then represents how much time has passed since the epoch 
-
--- Negative revolution duration means its rotating anti-clockwise
+-- The angle the gear is rotated then represents how much time has passed since the epoch
 
 -- Gear (revolution duration, epoch)
 data Gear = Gear NominalDiffTime UTCTime
@@ -100,7 +98,7 @@ moonGear = Gear duration epoch
 -- Represents one moon revolution around its axis, epoch is at full moon
 moonPhaseGear :: Gear
 moonPhaseGear = Gear duration epoch
-    where duration = - (29.5305 * dayDuration)
+    where duration = 29.5305 * dayDuration
           epoch    = UTCTime (fromGregorian 2000 12 11) (realToFrac $ 10 * hourDuration + 2 * minuteDuration)
 
 calendarGear :: Gear

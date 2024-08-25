@@ -124,8 +124,9 @@ now clock = do
 data CETClock = CETClock
 instance Clock CETClock where
     type ClockValue CETClock = CETClockValue
+
     fromUtc :: CETClock -> UTCTime -> CETClockValue
-    fromUtc CETClock utc = CETClockVal hour
+    fromUtc _ utc = CETClockVal hour
         where unit = pi / 12
               hour = toEnum $ floor $ angleAtTime sunGear utc / unit `mod'` 12
 
@@ -133,6 +134,28 @@ instance Clock CETClock where
 newtype CETClockValue = CETClockVal RomanNumerals
 instance Show CETClockValue where
     show (CETClockVal val) = "CET Clock -> " ++ show val
+
+
+-- + -------------------------------------------------------------------- + --
+
+-- Old Czech Time, "https://cs.wikipedia.org/wiki/Vlašské_hodiny"
+-- Divides day in 24 equal parts, beginning at the sunset
+-- Shown in Gothic numerals from 1 to 24 on the inner dial
+
+data OldCzechClock = OldCzechClock
+
+instance Clock OldCzechClock where
+    type ClockValue OldCzechClock = OldCzechClockValue
+
+    fromUtc :: OldCzechClock -> UTCTime -> OldCzechClockValue
+    fromUtc _ utc = OldCzechClockVal hour
+        where unit = pi / 12
+              sunGearAngle = angleAtTime sunGear utc
+              hour = floor $ (sunGearAngle - sunsetAzimuth) / unit
+
+newtype OldCzechClockValue = OldCzechClockVal Int
+instance Show OldCzechClockValue where
+    show (OldCzechClockVal val) = "Old Czech Time -> " ++ show val
 
 -- + -------------------------------------------------------------------- + --
 
@@ -160,6 +183,7 @@ sunriseAzimuth sunPosition =
 -- Finds the altitude at which Sun sets, from sun's position on the dial
 sunsetAzimuth :: Vec2 -> Float
 sunsetAzimuth sunPosition = - (sunriseAzimuth sunPosition)
+
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --

@@ -76,7 +76,7 @@ rotationAfterTime gear time = realToFrac time * angularSpeed gear
 angleAtTime :: Gear -> UTCTime -> Float
 angleAtTime gear utc =
     let (Gear _ epoch) = gear
-        distanceTraveled = rotationAfterTime gear $ diffUTCTime epoch utc
+        distanceTraveled = rotationAfterTime gear $ diffUTCTime utc epoch
     in  distanceTraveled `mod'` (2 * pi)
 
 -- + -------------------------------------------------------------------- + --

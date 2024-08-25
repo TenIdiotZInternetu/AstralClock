@@ -60,6 +60,8 @@ zodiacDistanceFromOrigin = 0.2851
 -- Usually its a time when the gear's hand points directly upwards.
 -- The angle the gear is rotated then represents how much time has passed since the epoch 
 
+-- Negative revolution duration means its rotating anti-clockwise
+
 -- Gear (revolution duration, epoch)
 data Gear = Gear NominalDiffTime UTCTime
 
@@ -77,6 +79,7 @@ angleAtTime gear utc =
         distanceTraveled = rotationAfterTime gear $ diffUTCTime utc epoch
     in  distanceTraveled `mod'` (2 * pi)
 
+
 -- + -------------------------------------------------------------------- + --
 
 sunGear :: Gear
@@ -91,19 +94,20 @@ zodiacGear = Gear duration epoch
 
 moonGear :: Gear
 moonGear = Gear duration epoch
-    where duration = 378.8 / 365 * dayDuration
-          epoch    = UTCTime (fromGregorian 2000 12 21) (realToFrac $ 7 * hourDuration + 37 * minuteDuration)
+    where duration = 378.83 / 366 * dayDuration
+          epoch    = UTCTime (fromGregorian 2000 6 21) (realToFrac $ 3 * hourDuration)
 
 -- Represents one moon revolution around its axis, epoch is at full moon
 moonPhaseGear :: Gear
 moonPhaseGear = Gear duration epoch
-    where duration = 29.5305 * dayDuration
+    where duration = - (29.5305 * dayDuration)
           epoch    = UTCTime (fromGregorian 2000 12 11) (realToFrac $ 10 * hourDuration + 2 * minuteDuration)
 
 calendarGear :: Gear
 calendarGear = Gear duration epoch
     where duration = 365 * dayDuration
           epoch    = UTCTime (fromGregorian 2000 1 1) 0
+
 
 -- [[ --------------------------- Clocks ------------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
@@ -115,6 +119,7 @@ class Clock c where
 now :: Clock c => c -> IO (ClockValue c)
 now clock = do
     fromUtc clock <$> getCurrentTime
+
 
 -- + -------------------------------------------------------------------- + --
 

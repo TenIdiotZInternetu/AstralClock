@@ -97,6 +97,27 @@ data CETClock = CETClock
 
 newtype CETClockValue = CETClockVal Float
 
+-- + -------------------------------------------------------------------- + --
+
+zodiacCircle :: Float -> Circle
+zodiacCircle gearAngle = Circle center zodiacRadius
+    where center = scaleVector zodiacDistanceFromOrigin (unitVector gearAngle)
+
+sunPosition :: Circle -> Float -> Vec2
+sunPosition zodiac sunAngle = 
+    let sunHandle = Ray originPoint (unitVector sunAngle) 
+    in  fst $ fromJust $ rayCircleIntersection sunHandle zodiac
+
+sunriseAltitude :: Vec2 -> Float
+sunriseAltitude sunPosition = 
+    let dayCircle = Circle originPoint (magnitude sunPosition)
+        (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection dayCircle horizonLine
+    in  if x1 < x2 then azimuth (Vec2 x1 y1) - pi           -- -pi, since altitude is 0, when the sun points upwards
+        else azimuth (Vec2 x2 y2) - pi
+
+sunsetAltitude :: Vec2 -> Float
+sunsetAltitude sunPosition = - (sunriseAltitude sunPosition)
+
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
 

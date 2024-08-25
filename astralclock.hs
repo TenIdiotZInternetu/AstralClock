@@ -6,8 +6,6 @@ import Prelude hiding (truncate)
 import Data.Maybe (isNothing, fromJust)
 import Distribution.Compat.Time (getCurTime)
 
-romanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
-
 -- [[ ------------------------ Time Constants -------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
 
@@ -126,14 +124,16 @@ instance Clock CETClock where
     fromUtc :: CETClock -> UTCTime -> CETClockValue
     fromUtc CETClock utc = CETClockVal hour
         where unit = pi / 12
-              hour = angleAtTime sunGear utc / unit `mod'` 12
+              hour = toEnum $ floor $ angleAtTime sunGear utc / unit `mod'` 12
 
 
-newtype CETClockValue = CETClockVal Float
+newtype CETClockValue = CETClockVal RomanNumerals
 instance Show CETClockValue where
     show (CETClockVal val) = show val
 
 -- + -------------------------------------------------------------------- + --
+
+data RomanNumerals = I | II | III | IV | V | VI | VII | VIII | IX | X | XI | XII deriving (Enum, Show)
 
 -- Creates circle from rotation (in radians) of the Zodiac gear 
 zodiacCircle :: Float -> Circle

@@ -82,12 +82,12 @@ angleAtTime gear utc =
 sunGear :: Gear
 sunGear = Gear duration epoch
     where duration = dayDuration
-          epoch    = UTCTime (fromGregorian 2000 12 21) (realToFrac $ 11 * hourDuration)
+          epoch    = UTCTime (fromGregorian 2000 6 21) (realToFrac $ 11 * hourDuration)
 
 zodiacGear :: Gear
 zodiacGear = Gear duration epoch
     where duration = 365 / 366 * dayDuration
-          epoch    = UTCTime (fromGregorian 2000 12 21) (realToFrac $ 11 * hourDuration)
+          epoch    = UTCTime (fromGregorian 2000 6 21) (realToFrac $ 11 * hourDuration)
 
 moonGear :: Gear
 moonGear = Gear duration epoch
@@ -119,7 +119,7 @@ now clock = do
 -- + -------------------------------------------------------------------- + --
 
 -- Central European Time, UTC +1
--- Shown in Roman numerals from I to XII on the inner dial
+-- Shown in Roman numerals from I to XII on the inner dial, pointed at by the hand
 
 data CETClock = CETClock
 instance Clock CETClock where
@@ -128,7 +128,7 @@ instance Clock CETClock where
     fromUtc :: CETClock -> UTCTime -> CETClockValue
     fromUtc _ utc = CETClockVal hour
         where unit = pi / 12
-              hour = toEnum $ floor $ angleAtTime sunGear utc / unit `mod'` 12
+              hour = toEnum $ floor $ (angleAtTime sunGear utc) / unit `mod'` 12
 
 
 newtype CETClockValue = CETClockVal RomanNumerals
@@ -139,23 +139,50 @@ instance Show CETClockValue where
 -- + -------------------------------------------------------------------- + --
 
 -- Old Czech Time, "https://cs.wikipedia.org/wiki/Vlašské_hodiny"
+
 -- Divides day in 24 equal parts, beginning at the sunset
--- Shown in Gothic numerals from 1 to 24 on the inner dial
+-- Shown in Gothic numerals from 1 to 24 on the inner dial, pointed at by the hand
 
-data OldCzechClock = OldCzechClock
+-- data OldCzechClock = OldCzechClock
 
-instance Clock OldCzechClock where
-    type ClockValue OldCzechClock = OldCzechClockValue
+-- instance Clock OldCzechClock where
+--     type ClockValue OldCzechClock = OldCzechClockValue
 
-    fromUtc :: OldCzechClock -> UTCTime -> OldCzechClockValue
-    fromUtc _ utc = OldCzechClockVal hour
+--     fromUtc :: OldCzechClock -> UTCTime -> OldCzechClockValue
+--     fromUtc _ utc = OldCzechClockVal hour
+--         where unit = pi / 12
+--               sunGearAngle = angleAtTime sunGear utc
+--               hour = floor $ (sunGearAngle - sunsetAzimuth) / unit
+
+
+-- newtype OldCzechClockValue = OldCzechClockVal Int
+-- instance Show OldCzechClockValue where
+--     show (OldCzechClockVal val) = "Old Czech Time -> " ++ show val
+
+
+-- + -------------------------------------------------------------------- + --
+
+-- Sidereal time, https://en.wikipedia.org/wiki/Sidereal_time
+
+-- Defines day as time it takes for Earth to make one full revolution around its axis, which is 23h 56m 4s
+-- In the span of year, the difference between these times makes a full day
+
+-- Shown in Roman numerals from I to XII on the inner dial, pointed by the little star
+-- It revolves at the same rate as the zodiac gear
+
+data SiderealClock = SiderealClock
+
+instance Clock SiderealClock where
+    type ClockValue SiderealClock = SiderealClockValue
+
+    fromUtc _ utc = SiderealClockVal hour
         where unit = pi / 12
-              sunGearAngle = angleAtTime sunGear utc
-              hour = floor $ (sunGearAngle - sunsetAzimuth) / unit
+              starHandAngle = angleAtTime zodiacGear utc + pi / 2   -- At epoch, star points directly eastwards
+              hour = toEnum $ floor $ (starHandAngle / unit) `mod'` 12
 
-newtype OldCzechClockValue = OldCzechClockVal Int
-instance Show OldCzechClockValue where
-    show (OldCzechClockVal val) = "Old Czech Time -> " ++ show val
+newtype SiderealClockValue = SiderealClockVal RomanNumerals
+instance Show SiderealClockValue where
+    show (SiderealClockVal val) = "Sidereal time -+ " ++ show val
 
 -- + -------------------------------------------------------------------- + --
 

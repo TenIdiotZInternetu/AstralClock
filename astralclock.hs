@@ -52,38 +52,67 @@ zodiacDistanceFromOrigin = 0.2851
 -- [[ ---------------------------- Gears ------------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
 
--- Gear (revolution duration)
-newtype Gear = Gear NominalDiffTime
+-- The hearts of clocks are mechanical gears, clock hands are attached to these gears
+-- Each of them makes a full revolution in specific amount of time,
+--      making it easy to calculate angular speed
+
+-- Time at which a gear is in its default poistion is called an epoch
+-- Usually its a time when the gear's hand points directly upwards.
+-- The angle the gear is rotated then represents how much time has passed since the epoch 
+
+-- Gear (revolution duration, epoch)
+data Gear = Gear NominalDiffTime UTCTime
 
 angularSpeed :: Gear -> Float
-angularSpeed (Gear revolution) = realToFrac (2 * pi) / realToFrac revolution
+angularSpeed (Gear revolution _) = realToFrac (2 * pi) / realToFrac revolution
 
--- Returns angular distance (radians) the gear rotated in given time
+-- Returns angular distance (radians) the gear travels in given time
 rotationAfterTime :: Gear -> NominalDiffTime -> Float
 rotationAfterTime gear time = realToFrac time * angularSpeed gear
+
+-- Returns the angle the gear makes with its default position at epoch
+angleAtTime :: Gear -> UTCTime -> Float
+angleAtTime gear utc =
+    let (Gear _ epoch) = gear
+        distanceTraveled = rotationAfterTime gear $ diffUTCTime epoch utc
+    in  distanceTraveled `mod'` (2 * pi)
 
 -- + -------------------------------------------------------------------- + --
 
 sunGear :: Gear
-sunGear = Gear dayDuration
+sunGear = Gear duration epoch
+    where duration = dayDuration
+          epoch    = UTCTime (fromGregorian 2000 12 21) (realToFrac $ 11 * hourDuration)
 
 zodiacGear :: Gear
-zodiacGear = Gear $ 365 / 366 * dayDuration
+zodiacGear = Gear duration epoch
+    where duration = 365 / 366 * dayDuration
+          epoch    = UTCTime (fromGregorian 2000 12 21) (realToFrac $ 11 * hourDuration)
 
 moonGear :: Gear
-moonGear = Gear $ 378.8 / 365 * dayDuration
+moonGear = Gear duration epoch
+    where duration = 378.8 / 365 * dayDuration
+          epoch    = UTCTime (fromGregorian 2000 12 21) (realToFrac $ 7 * hourDuration + 37 * minuteDuration)
 
+-- Represents one moon revolution around its axis, epoch is at full moon
 moonPhaseGear :: Gear
-moonPhaseGear = Gear $ 29.5305 * dayDuration
+moonPhaseGear = Gear duration epoch
+    where duration = 29.5305 * dayDuration
+          epoch    = UTCTime (fromGregorian 2000 12 11) (realToFrac $ 10 * hourDuration + 2 * minuteDuration)
 
 calendarGear :: Gear
-calendarGear = Gear $ 365 * dayDuration
-
+calendarGear = Gear duration epoch
+    where duration = 365 * dayDuration
+          epoch    = UTCTime (fromGregorian 2000 1 1) 0
 
 -- [[ --------------------------- Clocks ------------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
 
 class Clock c where
+    -- Time at which all associated gears of the clock point upwards
+    epoch :: c -> UTCTime
+
+    -- Gets the 
     fromUtc :: ClockValue val => c -> UTCTime -> val
 
 class ClockValue val where
@@ -110,17 +139,17 @@ sunPosition zodiac sunAngle =
     let sunHandle = Ray originPoint (unitVector sunAngle) 
     in  fst $ fromJust $ rayCircleIntersection sunHandle zodiac
 
--- Finds the altitude at which Sun rises, from sun's position on the dial
-sunriseAltitude :: Vec2 -> Float
-sunriseAltitude sunPosition = 
+-- Finds the azimuth at which Sun rises, from sun's position on the dial
+sunriseAzimuth :: Vec2 -> Float
+sunriseAzimuth sunPosition = 
     let dayCircle = Circle originPoint (magnitude sunPosition)
         (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection dayCircle horizonLine
-    in  if x1 < x2 then azimuth (Vec2 x1 y1) - pi           -- -pi, since altitude is 0, when the sun points upwards
+    in  if x1 < x2 then azimuth (Vec2 x1 y1) - pi           -- -pi, since azimuth is 0, when the sun points upwards
         else azimuth (Vec2 x2 y2) - pi
 
 -- Finds the altitude at which Sun sets, from sun's position on the dial
-sunsetAltitude :: Vec2 -> Float
-sunsetAltitude sunPosition = - (sunriseAltitude sunPosition)
+sunsetAzimuth :: Vec2 -> Float
+sunsetAzimuth sunPosition = - (sunriseAzimuth sunPosition)
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --

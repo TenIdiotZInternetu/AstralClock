@@ -197,6 +197,7 @@ instance Clock MoonPhase where
 
 
 
+
 data MoonPhaseValue = MoonPhaseVal LeftRight Float
 instance Show MoonPhaseValue where
     show (MoonPhaseVal side portion) = 
@@ -210,7 +211,7 @@ instance Show MoonPhaseValue where
             else base
 
 
-data LeftRight = L | R deriving (Enum, Show)
+data LeftRight = L | R deriving (Enum, Show, Eq)
 
 -- + -------------------------------------------------------------------- + --
 

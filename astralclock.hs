@@ -84,7 +84,7 @@ calendarGear = Gear $ 365 * dayDuration
 -- [[ ------------------------------------------------------------------ ]] --
 
 class Clock c where
-    fromUtc :: c -> UTCTime
+    fromUtc :: ClockValue val => c -> UTCTime -> val
 
 class ClockValue val where
     clock :: Clock c => val -> c
@@ -99,15 +99,18 @@ newtype CETClockValue = CETClockVal Float
 
 -- + -------------------------------------------------------------------- + --
 
+-- Creates circle from rotation (in radians) of the Zodiac gear 
 zodiacCircle :: Float -> Circle
 zodiacCircle gearAngle = Circle center zodiacRadius
     where center = scaleVector zodiacDistanceFromOrigin (unitVector gearAngle)
 
+-- Finds Sun's position on the dial, based on zodiac circle, and the rotation of the sun gear
 sunPosition :: Circle -> Float -> Vec2
 sunPosition zodiac sunAngle = 
     let sunHandle = Ray originPoint (unitVector sunAngle) 
     in  fst $ fromJust $ rayCircleIntersection sunHandle zodiac
 
+-- Finds the altitude at which Sun rises, from sun's position on the dial
 sunriseAltitude :: Vec2 -> Float
 sunriseAltitude sunPosition = 
     let dayCircle = Circle originPoint (magnitude sunPosition)
@@ -115,6 +118,7 @@ sunriseAltitude sunPosition =
     in  if x1 < x2 then azimuth (Vec2 x1 y1) - pi           -- -pi, since altitude is 0, when the sun points upwards
         else azimuth (Vec2 x2 y2) - pi
 
+-- Finds the altitude at which Sun sets, from sun's position on the dial
 sunsetAltitude :: Vec2 -> Float
 sunsetAltitude sunPosition = - (sunriseAltitude sunPosition)
 
@@ -196,6 +200,9 @@ rayCircleIntersection ray (Circle center radius) =
 
     in  points roots
 
+
+-- Returns intersections of 2 circles if they exist, return Nothing if not
+-- Points are not in any particular order, if circles intersect in only one point, both results will be the same
 circlesIntersection :: Circle -> Circle -> Maybe (Vec2, Vec2)
 circlesIntersection (Circle (Vec2 x1 y1) r1) (Circle (Vec2 x2 y2) r2) =
     let c = (- x1^2 + x2^2 - y1^2 + y2^2 + r1^2 - r2^2) / (2 * (x2 - x1)) - x1

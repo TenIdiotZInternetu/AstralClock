@@ -118,6 +118,9 @@ now clock = do
 
 -- + -------------------------------------------------------------------- + --
 
+-- Central European Time, UTC +1
+-- Shown in Roman numerals from I to XII on the inner dial
+
 data CETClock = CETClock
 instance Clock CETClock where
     type ClockValue CETClock = CETClockValue
@@ -129,7 +132,7 @@ instance Clock CETClock where
 
 newtype CETClockValue = CETClockVal RomanNumerals
 instance Show CETClockValue where
-    show (CETClockVal val) = show val
+    show (CETClockVal val) = "CET Clock -> " ++ show val
 
 -- + -------------------------------------------------------------------- + --
 

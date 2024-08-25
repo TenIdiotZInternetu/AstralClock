@@ -184,7 +184,36 @@ newtype SiderealClockValue = SiderealClockVal RomanNumerals
 instance Show SiderealClockValue where
     show (SiderealClockVal val) = "Sidereal time -+ " ++ show val
 
+
 -- + -------------------------------------------------------------------- + --
+
+-- Moon Phase
+-- Shown on the small moon model on the moon hand,
+-- The hand is actually half-white, half-black, and revolves around its axis in the direction of the hand
+
+data MoonPhase = MoonPhase
+instance Clock MoonPhase where
+    type ClockValue MoonPhase = MoonPhaseValue
+
+
+
+data MoonPhaseValue = MoonPhaseVal LeftRight Float
+instance Show MoonPhaseValue where
+    show (MoonPhaseVal side portion) = 
+        let percentage = show (portion * 100) ++ "%"
+            base = "Moon Phase: " ++ show side ++ " " ++ percentage
+            inQuarter = portion > 0.45 && portion < 0.55
+        in  if portion > 0.95 then base ++ " (Full moon)"
+            else if inQuarter && side == R then base ++ " (First Quarter)"
+            else if inQuarter && side == L then base ++ " (Last Quarter)"
+            else if portion < 0.05 then base ++ " (New Moon)"
+            else base
+
+
+data LeftRight = L | R deriving (Enum, Show)
+
+-- + -------------------------------------------------------------------- + --
+
 
 data RomanNumerals = I | II | III | IV | V | VI | VII | VIII | IX | X | XI | XII deriving (Enum, Show)
 

@@ -18,7 +18,7 @@ hourDuration :: NominalDiffTime
 hourDuration = 60 * minuteDuration
 
 dayDuration :: NominalDiffTime
-dayDuration = 24 * minuteDuration
+dayDuration = 24 * hourDuration
 
 
 -- [[ -------------------------- Astrolabe ----------------------------- ]] --

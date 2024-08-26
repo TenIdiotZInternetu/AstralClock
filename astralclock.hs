@@ -152,21 +152,25 @@ instance Show CETClockValue where
 -- Divides day in 24 equal parts, beginning at the sunset
 -- Shown in Gothic numerals from 1 to 24 on the inner dial, pointed at by the hand
 
--- data OldCzechClock = OldCzechClock
+data OldCzechClock = OldCzechClock
 
--- instance Clock OldCzechClock where
---     type ClockValue OldCzechClock = OldCzechClockValue
+instance Clock OldCzechClock where
+    type ClockValue OldCzechClock = OldCzechClockValue
 
---     fromUtc :: OldCzechClock -> UTCTime -> OldCzechClockValue
---     fromUtc _ utc = OldCzechClockVal hour
---         where unit = pi / 12
---               sunGearAngle = angleAtTime sunGear utc
---               hour = floor $ (sunGearAngle - sunsetAzimuth) / unit
+    fromUtc :: OldCzechClock -> UTCTime -> OldCzechClockValue
+    fromUtc _ utc = OldCzechClockVal hour
+        where (UTCTime day time) = utc
+              unit = pi / 12
+              todaysSunset = timeOfDayToTime $ sunsetTime day
+              lastSunsetAzimuth = if time > todaysSunset then sunsetAzimuth day
+                                  else sunsetAzimuth (addDays (-1) day)
+              
+              hour = floor $ (sunAzimuth utc - lastSunsetAzimuth) / unit
 
 
--- newtype OldCzechClockValue = OldCzechClockVal Int
--- instance Show OldCzechClockValue where
---     show (OldCzechClockVal val) = "Old Czech Time -> " ++ show val
+newtype OldCzechClockValue = OldCzechClockVal Int
+instance Show OldCzechClockValue where
+    show (OldCzechClockVal val) = "Old Czech Time -> " ++ show val
 
 
 -- + -------------------------------------------------------------------- + --
@@ -252,7 +256,7 @@ sunsetTime :: Day -> TimeOfDay
 sunsetTime day =
     let azimuth = sunsetAzimuth day
         unit = pi / 12
-        hours = (azimuth / unit) + 11            -- since azimuth 0 represents noon in CET
+        hours = (azimuth / unit) + 11                   -- since azimuth 0 represents noon in CET
     in  timeToTimeOfDay (realToFrac hours * realToFrac hourDuration)
 
 
@@ -261,7 +265,7 @@ sunriseTime day =
     let sunset = timeOfDayToTime $ sunsetTime day
         noon = 11 * realToFrac hourDuration
         timeFromNoon = sunset - noon
-    in  timeToTimeOfDay $ noon - timeFromNoon          -- sunset and sunrise lie equal distance from noon on the dial
+    in  timeToTimeOfDay $ noon - timeFromNoon           -- sunset and sunrise lie equal distance from noon on the dial
 
 
 -- + -------------------------------------------------------------------- + --

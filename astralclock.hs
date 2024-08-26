@@ -135,7 +135,7 @@ instance Clock CETClock where
     fromUtc :: CETClock -> UTCTime -> CETClockValue
     fromUtc _ utc = CETClockVal hour
         where unit = pi / 12
-              hour = toEnum $ floor $ (angleAtTime sunGear utc) / unit `mod'` 12
+              hour = toEnum $ floor $ (angleAtTime sunGear utc / unit) `mod'` 12
 
 
 newtype CETClockValue = CETClockVal RomanNumerals
@@ -203,7 +203,7 @@ instance Clock MoonPhase where
     type ClockValue MoonPhase = MoonPhaseValue
 
     fromUtc :: MoonPhase -> UTCTime -> MoonPhaseValue
-    fromUtc _ utc = 
+    fromUtc _ utc =
         let gearAngle = angleAtTime moonPhaseGear utc
             side = if sin gearAngle > 0 then L
                    else R
@@ -214,7 +214,7 @@ instance Clock MoonPhase where
 -- MoonPhaseVal (side from which the moon is illuminated, portion of the moon that is illuminated <0;1>)
 data MoonPhaseValue = MoonPhaseVal LeftRight Float
 instance Show MoonPhaseValue where
-    show (MoonPhaseVal side portion) = 
+    show (MoonPhaseVal side portion) =
         let percentage = show (portion * 100) ++ "%"
             base = "Moon Phase: " ++ show side ++ " " ++ percentage
             inQuarter = portion > 0.45 && portion < 0.55
@@ -232,20 +232,53 @@ data LeftRight = L | R deriving (Enum, Show, Eq)
 
 data RomanNumerals = I | II | III | IV | V | VI | VII | VIII | IX | X | XI | XII deriving (Enum, Show)
 
+
+-- [[ -------------------------- Astronomy ----------------------------- ]] --
+-- [[ ------------------------------------------------------------------ ]] --
+
+today :: IO Day
+today = do
+    (UTCTime day _) <- getCurrentTime
+    return day
+
+inDays :: Int -> IO Day
+inDays days = do 
+    (UTCTime day _) <- addUTCTime (fromIntegral days * dayDuration) <$> getCurrentTime
+    return day
+
+sunsetTime :: Day -> UTCTime
+sunsetTime day = 
+    let utcDay = UTCTime day 0
+        azimuth = sunsetAzimuth utcDay
+        unit = pi / 12
+        hours = (angleAtTime sunGear utcDay / unit) - 1             -- since utc is 1 hour behind cet
+    in  UTCTime day (realToFrac hours * realToFrac hourDuration)
+
+sunriseTime :: Day -> UTCTime
+sunriseTime day = 
+    let sunset = sunsetTime day
+        noon = UTCTime day (12 * realToFrac hourDuration)
+        timeFromNoon = diffUTCTime sunset noon
+    in  addUTCTime (-timeFromNoon) noon
+
+
+-- + -------------------------------------------------------------------- + --
+
 -- Creates circle from rotation (in radians) of the Zodiac gear 
-zodiacCircle :: Float -> Circle
-zodiacCircle gearAngle = Circle center zodiacRadius
-    where center = scaleVector zodiacDistanceFromOrigin (unitVector gearAngle)
+zodiacCircle :: UTCTime -> Circle
+zodiacCircle utc = Circle center zodiacRadius
+    where gearAngle = angleAtTime zodiacGear utc
+          center = scaleVector zodiacDistanceFromOrigin (unitVector gearAngle)
 
 -- Finds Sun's position on the dial, based on zodiac circle, and the rotation of the sun gear
 sunPosition :: Circle -> Float -> Vec2
-sunPosition zodiac sunAngle = 
-    let sunHandle = Ray originPoint (unitVector sunAngle) 
+sunPosition zodiac sunAngle =
+    let sunHandle = Ray originPoint (unitVector sunAngle)
     in  fst $ fromJust $ rayCircleIntersection sunHandle zodiac
 
 -- Finds the azimuth at which Sun rises, from sun's position on the dial
 sunriseAzimuth :: Vec2 -> Float
-sunriseAzimuth sunPosition = 
+sunriseAzimuth sunPosition =
     let dayCircle = Circle originPoint (magnitude sunPosition)
         (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection dayCircle horizonLine
     in  if x1 < x2 then azimuth (Vec2 x1 y1) - pi           -- -pi, since azimuth is 0, when the sun points upwards
@@ -254,7 +287,6 @@ sunriseAzimuth sunPosition =
 -- Finds the altitude at which Sun sets, from sun's position on the dial
 sunsetAzimuth :: Vec2 -> Float
 sunsetAzimuth sunPosition = - (sunriseAzimuth sunPosition)
-
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
@@ -294,7 +326,7 @@ unitVector angle = Vec2 (cos angle) (sin angle)
 originPoint :: Vec2
 originPoint = Vec2 0 0
 
-instance Show Vec2 where 
+instance Show Vec2 where
     show (Vec2 x y) = "[" ++ show x ++ ", " ++ show y ++ "]"
 
 -- + -------------------------------------------------------------------- + --
@@ -304,7 +336,7 @@ data Ray = Ray Vec2 Vec2
 
 -- Return point lying on ray at specified parameter t
 rayPointAt :: Ray -> Float -> Vec2
-rayPointAt (Ray origin direction) t = addVectors origin (scaleVector t direction) 
+rayPointAt (Ray origin direction) t = addVectors origin (scaleVector t direction)
 
 
 -- + -------------------------------------------------------------------- + --
@@ -342,7 +374,7 @@ circlesIntersection (Circle (Vec2 x1 y1) r1) (Circle (Vec2 x2 y2) r2) =
     let c = (- x1^2 + x2^2 - y1^2 + y2^2 + r1^2 - r2^2) / (2 * (x2 - x1)) - x1
         d = (y2 - y1) / (x2 - x1)
 
-        yRoots = quadraticFormula (d^2 + 1) (-2 * c * d - 2 * y1) (-r1^2 + c^2 + y1^2) 
+        yRoots = quadraticFormula (d^2 + 1) (-2 * c * d - 2 * y1) (-r1^2 + c^2 + y1^2)
         xFromY y = (c + x1) - d * y
 
     in  if isNothing yRoots then Nothing

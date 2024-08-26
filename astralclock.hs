@@ -149,7 +149,7 @@ instance Show CETClockValue where
 
 -- Old Czech Time, "https://cs.wikipedia.org/wiki/Vlašské_hodiny"
 
--- Divides day in 24 equal parts, beginning at the sunset
+-- Divides day into 24 equal parts, beginning at the sunset
 -- Shown in Gothic numerals from 1 to 24 on the inner dial, pointed at by the hand
 
 data OldCzechClock = OldCzechClock
@@ -200,9 +200,20 @@ instance Show SiderealClockValue where
 
 -- + -------------------------------------------------------------------- + --
 
+-- Babylonian time (or Planetary hours), https://en.wikipedia.org/wiki/Planetary_hours#Table_of_hours
+
+-- Devides day into 12 equal parts, starting at sunrise and ending at sunrise
+-- During night the time is not shown on the clock
+
+-- Shown in Arabian numerals from 1 to 12 in golden sections of the inner dial,
+--   told by the symbol of Sun lying in a certain section
+
+-- + -------------------------------------------------------------------- + --
+
 -- Moon Phase
 -- Shown on the small moon model on the moon hand,
--- The hand is actually half-white, half-black, and revolves around its axis in the direction of the hand
+-- The model of moon on the moon hand is actually half-white, half-black,
+--   and revolves around its axis in the opposite direction of the hand
 
 data MoonPhase = MoonPhase
 instance Clock MoonPhase where

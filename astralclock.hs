@@ -274,8 +274,8 @@ moonAzimuth = angleAtTime moonGear
 -- Creates circle from rotation (in radians) of the Zodiac gear 
 zodiacCircle :: UTCTime -> Circle
 zodiacCircle utc = Circle center zodiacRadius
-    where gearAngle = angleAtTime zodiacGear utc
-          center = scaleVector zodiacDistanceFromOrigin (unitVector gearAngle)
+    where gearAzimuth = angleAtTime zodiacGear utc + pi / 2
+          center = scaleVector zodiacDistanceFromOrigin (unitVector gearAzimuth)
 
 -- Finds Sun's position on the dial, based on zodiac circle, and the rotation of the sun gear
 sunPosition :: UTCTime -> Vec2
@@ -285,17 +285,17 @@ sunPosition utc =
     in  fst $ fromJust $ rayCircleIntersection sunHandle zodiac
 
 -- Finds the azimuth at which Sun rises, from sun's position on the dial
-sunriseAzimuth :: Day -> Float
-sunriseAzimuth day =
+sunsetAzimuth :: Day -> Float
+sunsetAzimuth day =
     let sunPos = sunPosition (UTCTime day 0)
         dayCircle = Circle originPoint (magnitude sunPos)
         (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection dayCircle horizonLine
-    in  if x1 < x2 then azimuth (Vec2 x1 y1) - pi           -- -pi, since azimuth is 0, when the sun points upwards
-        else azimuth (Vec2 x2 y2) - pi
+    in  if x1 > x2 then azimuth (Vec2 x1 y1) + pi / 2           -- -pi, since azimuth is 0, when the sun points upwards
+        else azimuth (Vec2 x2 y2) + pi / 2
 
 -- Finds the altitude at which Sun sets, from sun's position on the dial
-sunsetAzimuth :: Day -> Float
-sunsetAzimuth utc = - (sunriseAzimuth utc)
+sunriseAzimuth :: Day -> Float
+sunriseAzimuth day = - (sunsetAzimuth day)
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
@@ -382,7 +382,7 @@ rayCircleIntersection ray (Circle center radius) =
 -- Points are not in any particular order, if circles intersect in only one point, both results will be the same
 circlesIntersection :: Circle -> Circle -> Maybe (Vec2, Vec2)
 circlesIntersection (Circle (Vec2 x1 y1) r1) (Circle (Vec2 x2 y2) r2)
-    | Vec2 x1 x2 == Vec2 x1 x2 = Nothing        -- Circles have the same center
+    | Vec2 x1 y1 == Vec2 x2 y2 = Nothing        -- Circles have the same center
     | x1 == x2 =
         let c = (- x1^2 + x2^2 - y1^2 + y2^2 + r1^2 - r2^2) / (2 * (y2 - y1)) - y1
             d = (x2 - x1) / (y2 - y1)

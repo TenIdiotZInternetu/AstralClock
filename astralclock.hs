@@ -66,15 +66,15 @@ zodiacDistanceFromOrigin = 0.2851
 -- Gear (revolution duration, epoch)
 data Gear = Gear NominalDiffTime UTCTime
 
-angularSpeed :: Gear -> Number
-angularSpeed (Gear revolution _) = realToFrac (2 * pi) / realToFrac revolution
+angularSpeed :: Gear -> Angle
+angularSpeed (Gear revolution _) = fullAngle / realToFrac revolution
 
 -- Returns angular distance (radians) the gear travels in given time
-rotationAfterTime :: Gear -> NominalDiffTime -> Number
+rotationAfterTime :: Gear -> NominalDiffTime -> Angle
 rotationAfterTime gear time = realToFrac time * angularSpeed gear
 
 -- Returns the angle the gear makes with its default position at epoch
-angleAtTime :: Gear -> UTCTime -> Number
+angleAtTime :: Gear -> UTCTime -> Angle
 angleAtTime gear utc =
     let (Gear _ epoch) = gear
         distanceTraveled = rotationAfterTime gear $ diffUTCTime utc epoch
@@ -351,17 +351,23 @@ straightAngle = pi
 rightAngle :: Angle
 rightAngle = pi / 2
 
-addAngles :: Angle -> Angle -> Angle
-addAngles a b = (a + b) `mod'` fullAngle
+-- Angle additian
+(.+) :: Angle -> Angle -> Angle
+a .+ b = (a + b) `mod'` fullAngle
 
 oppositeAngle :: Angle -> Angle
-oppositeAngle a = addAngles a straightAngle
+oppositeAngle a = a .+ straightAngle
 
 negateAngle :: Angle -> Angle
 negateAngle a = fullAngle - a `mod'` fullAngle
 
-diffAngles :: Angle -> Angle -> Angle
-diffAngles a b = addAngles a (negateAngle b)
+-- Angle subtraction
+(.-) :: Angle -> Angle -> Angle
+a .- b =  a .+ negateAngle b
+
+-- Angle multiplication
+(.*) :: Number -> Angle -> Angle
+a .* b = (a * b) `mod'` fullAngle
 
 fromDegrees :: Number -> Angle
 fromDegrees degs = degs / 180 * pi

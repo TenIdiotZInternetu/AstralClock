@@ -352,6 +352,8 @@ rayPointAt (Ray origin direction) t = addVectors origin (scaleVector t direction
 
 -- Circle (center, radius)
 data Circle = Circle Vec2 Float
+instance Show Circle where
+    show (Circle center radius) = "Circle " ++ show center ++ " Radius: " ++ show radius
 
 -- Returns intersections of ray and circle if they exist, return Nothing if not
 -- First point is closer to the ray origin, second is further.

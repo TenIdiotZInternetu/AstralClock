@@ -118,6 +118,10 @@ now :: Clock c => c -> IO (ClockValue c)
 now clock = do
     fromUtc clock <$> getCurrentTime
 
+inTime :: Clock c => c -> NominalDiffTime -> IO (ClockValue c)
+inTime clock time = do
+    fromUtc clock . addUTCTime time <$> getCurrentTime
+
 
 -- + -------------------------------------------------------------------- + --
 

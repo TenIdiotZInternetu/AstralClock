@@ -67,18 +67,17 @@ zodiacDistanceFromOrigin = 0.2851
 data Gear = Gear NominalDiffTime UTCTime
 
 angularSpeed :: Gear -> Angle
-angularSpeed (Gear revolution _) = fullAngle / realToFrac revolution
+angularSpeed (Gear revolution _) = fullAngle ./ realToFrac revolution
 
 -- Returns angular distance (radians) the gear travels in given time
 rotationAfterTime :: Gear -> NominalDiffTime -> Angle
-rotationAfterTime gear time = realToFrac time * angularSpeed gear
+rotationAfterTime gear time = realToFrac time .* angularSpeed gear
 
 -- Returns the angle the gear makes with its default position at epoch
 angleAtTime :: Gear -> UTCTime -> Angle
 angleAtTime gear utc =
     let (Gear _ epoch) = gear
-        distanceTraveled = rotationAfterTime gear $ diffUTCTime utc epoch
-    in  distanceTraveled `mod'` (2 * pi)
+    in  rotationAfterTime gear $ diffUTCTime utc epoch
 
 
 -- + -------------------------------------------------------------------- + --
@@ -137,8 +136,8 @@ instance Clock CETClock where
 
     fromUtc :: CETClock -> UTCTime -> CETClockValue
     fromUtc _ utc = CETClockVal hour
-        where unit = pi / 12
-              hour = toEnum $ floor $ (angleAtTime sunGear utc / unit) `mod'` 12
+        where unit = straightAngle ./ 12
+              hour = toEnum $ floor $ (angleAtTime sunGear utc ./ unit) `mod'` 12
 
 
 newtype CETClockValue = CETClockVal RomanNumerals
@@ -161,12 +160,12 @@ instance Clock OldCzechClock where
     fromUtc :: OldCzechClock -> UTCTime -> OldCzechClockValue
     fromUtc _ utc = OldCzechClockVal hour
         where (UTCTime day time) = utc
-              unit = pi / 12
+              unit = fullAngle ./ 24
               todaysSunset = timeOfDayToTime $ sunsetTime day
               lastSunsetAzimuth = if time > todaysSunset then sunsetAzimuth day
                                   else sunsetAzimuth (addDays (-1) day)
 
-              hour = floor $ (sunAzimuth utc - lastSunsetAzimuth) / unit
+              hour = floor $ (sunAzimuth utc .- lastSunsetAzimuth) ./ unit
 
 
 newtype OldCzechClockValue = OldCzechClockVal Int
@@ -190,9 +189,9 @@ instance Clock SiderealClock where
 
     fromUtc :: SiderealClock -> UTCTime -> ClockValue SiderealClock
     fromUtc _ utc = SiderealClockVal hour
-        where unit = pi / 12
-              starHandAngle = angleAtTime zodiacGear utc + pi / 2   -- At epoch, star points directly eastwards
-              hour = toEnum $ floor $ (starHandAngle / unit) `mod'` 12
+        where unit = straightAngle ./ 12
+              starHandAngle = angleAtTime zodiacGear utc .+ rightAngle   -- At epoch, star points directly eastwards
+              hour = toEnum $ floor $ (starHandAngle ./ unit) `mod'` 12
 
 newtype SiderealClockValue = SiderealClockVal RomanNumerals
 instance Show SiderealClockValue where
@@ -217,10 +216,10 @@ instance Clock BabylonianClock where
     fromUtc _ utc = if afterSunset then BabylonianNight
                     else BabylonianClockVal hour
         where (UTCTime day time) = utc
-              unit = (sunsetAzimuth day - sunriseAzimuth day) / 12
+              unit = (sunsetAzimuth day .- sunriseAzimuth day) ./ 12
               afterSunset = time > timeOfDayToTime (sunsetTime day)
 
-              hour = floor ((sunAzimuth utc - sunriseAzimuth day) / unit)
+              hour = floor $ (sunAzimuth utc .- sunriseAzimuth day) ./ unit
 
 
 data BabylonianClockValue = BabylonianClockVal Int | BabylonianNight
@@ -287,8 +286,8 @@ inDays days = do
 sunsetTime :: Day -> TimeOfDay
 sunsetTime day =
     let azimuth = sunsetAzimuth day
-        unit = pi / 12
-        hours = (azimuth / unit) + 11                   -- since azimuth 0 represents noon in CET
+        unit = fullAngle ./ 24
+        hours = (azimuth ./ unit) + 11                   -- since azimuth 0 represents noon in CET
     in  timeToTimeOfDay (realToFrac hours * realToFrac hourDuration)
 
 
@@ -302,10 +301,10 @@ sunriseTime day =
 
 -- + -------------------------------------------------------------------- + --
 
-sunAzimuth :: UTCTime -> Number
+sunAzimuth :: UTCTime -> Angle
 sunAzimuth = angleAtTime sunGear
 
-moonAzimuth :: UTCTime -> Number
+moonAzimuth :: UTCTime -> Angle
 moonAzimuth = angleAtTime moonGear
 
 -- + -------------------------------------------------------------------- + --
@@ -329,12 +328,12 @@ sunsetAzimuth day =
     let sunPos = sunPosition (UTCTime day 0)
         dayCircle = Circle originPoint (magnitude sunPos)
         (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection dayCircle horizonLine
-    in  if x1 > x2 then azimuth (Vec2 x1 y1)     -- -pi, since azimuth is 0, when the sun points upwards
+    in  if x1 > x2 then azimuth (Vec2 x1 y1)
         else azimuth (Vec2 x2 y2)
 
 -- Finds the altitude at which Sun sets, from sun's position on the dial
 sunriseAzimuth :: Day -> Number
-sunriseAzimuth day = sunsetAzimuth day + pi
+sunriseAzimuth day = negateAngle $ sunsetAzimuth day
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
@@ -403,16 +402,16 @@ magnitude :: Vec2 -> Number
 magnitude (Vec2 x y) = pythagorean x y
 
 -- Returns angle in radians, as if the point was in polar coordinates
-azimuth :: Vec2 -> Number
-azimuth (Vec2 x y) = - (atan2 y x) + pi / 2
+azimuth :: Vec2 -> Angle
+azimuth (Vec2 x y) = (- atan2 y x) .+ rightAngle
 
 normalized :: Vec2 -> Vec2
 normalized v = scaleVector (1 / magnitude v) v
 
 -- Returns vector of magnitude 1, with azimuth given in radians
-unitVector :: Number -> Vec2
+unitVector :: Angle -> Vec2
 unitVector azimuth = Vec2 (cos theta) (sin theta)
-    where theta = -azimuth + pi / 2
+    where theta = negateAngle azimuth .+ rightAngle
 
 originPoint :: Vec2
 originPoint = Vec2 0 0

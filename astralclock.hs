@@ -369,6 +369,10 @@ a .- b =  a .+ negateAngle b
 (.*) :: Number -> Angle -> Angle
 a .* b = (a * b) `mod'` fullAngle
 
+-- Angle division
+(./) :: Angle -> Number -> Angle
+a ./ b = a .* (1 / b)
+
 fromDegrees :: Number -> Angle
 fromDegrees degs = degs / 180 * pi
 

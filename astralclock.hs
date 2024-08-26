@@ -248,10 +248,9 @@ inDays days = do
 
 sunsetTime :: Day -> UTCTime
 sunsetTime day = 
-    let utcDay = UTCTime day 0
-        azimuth = sunsetAzimuth utcDay
+    let azimuth = sunsetAzimuth day
         unit = pi / 12
-        hours = (angleAtTime sunGear utcDay / unit) - 1             -- since utc is 1 hour behind cet
+        hours = (azimuth / unit) - 1             -- since utc is 1 hour behind cet
     in  UTCTime day (realToFrac hours * realToFrac hourDuration)
 
 sunriseTime :: Day -> UTCTime
@@ -264,6 +263,14 @@ sunriseTime day =
 
 -- + -------------------------------------------------------------------- + --
 
+sunAzimuth :: UTCTime -> Float
+sunAzimuth = angleAtTime sunGear
+
+moonAzimuth :: UTCTime -> Float
+moonAzimuth = angleAtTime moonGear
+
+-- + -------------------------------------------------------------------- + --
+
 -- Creates circle from rotation (in radians) of the Zodiac gear 
 zodiacCircle :: UTCTime -> Circle
 zodiacCircle utc = Circle center zodiacRadius
@@ -271,22 +278,24 @@ zodiacCircle utc = Circle center zodiacRadius
           center = scaleVector zodiacDistanceFromOrigin (unitVector gearAngle)
 
 -- Finds Sun's position on the dial, based on zodiac circle, and the rotation of the sun gear
-sunPosition :: Circle -> Float -> Vec2
-sunPosition zodiac sunAngle =
-    let sunHandle = Ray originPoint (unitVector sunAngle)
+sunPosition :: UTCTime -> Vec2
+sunPosition utc =
+    let sunHandle = Ray originPoint (unitVector $ sunAzimuth utc)
+        zodiac = zodiacCircle utc
     in  fst $ fromJust $ rayCircleIntersection sunHandle zodiac
 
 -- Finds the azimuth at which Sun rises, from sun's position on the dial
-sunriseAzimuth :: Vec2 -> Float
-sunriseAzimuth sunPosition =
-    let dayCircle = Circle originPoint (magnitude sunPosition)
+sunriseAzimuth :: Day -> Float
+sunriseAzimuth day =
+    let sunPos = sunPosition (UTCTime day 0)
+        dayCircle = Circle originPoint (magnitude sunPos)
         (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection dayCircle horizonLine
     in  if x1 < x2 then azimuth (Vec2 x1 y1) - pi           -- -pi, since azimuth is 0, when the sun points upwards
         else azimuth (Vec2 x2 y2) - pi
 
 -- Finds the altitude at which Sun sets, from sun's position on the dial
-sunsetAzimuth :: Vec2 -> Float
-sunsetAzimuth sunPosition = - (sunriseAzimuth sunPosition)
+sunsetAzimuth :: Day -> Float
+sunsetAzimuth utc = - (sunriseAzimuth utc)
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --

@@ -164,7 +164,7 @@ instance Clock OldCzechClock where
               todaysSunset = timeOfDayToTime $ sunsetTime day
               lastSunsetAzimuth = if time > todaysSunset then sunsetAzimuth day
                                   else sunsetAzimuth (addDays (-1) day)
-              
+
               hour = floor $ (sunAzimuth utc - lastSunsetAzimuth) / unit
 
 
@@ -184,10 +184,10 @@ instance Show OldCzechClockValue where
 -- It revolves at the same rate as the zodiac gear
 
 data SiderealClock = SiderealClock
-
 instance Clock SiderealClock where
     type ClockValue SiderealClock = SiderealClockValue
 
+    fromUtc :: SiderealClock -> UTCTime -> ClockValue SiderealClock
     fromUtc _ utc = SiderealClockVal hour
         where unit = pi / 12
               starHandAngle = angleAtTime zodiacGear utc + pi / 2   -- At epoch, star points directly eastwards
@@ -207,6 +207,26 @@ instance Show SiderealClockValue where
 
 -- Shown in Arabian numerals from 1 to 12 in golden sections of the inner dial,
 --   told by the symbol of Sun lying in a certain section
+
+data BabylonianClock = BabylonianClock
+instance Clock BabylonianClock where
+    type ClockValue BabylonianClock = BabylonianClockValue
+
+    fromUtc :: BabylonianClock -> UTCTime -> ClockValue BabylonianClock
+    fromUtc _ utc = if afterSunset then BabylonianNight
+                    else BabylonianClockVal hour
+        where (UTCTime day time) = utc
+              unit = (sunsetAzimuth day - sunriseAzimuth day) / 12
+              afterSunset = time > timeOfDayToTime (sunsetTime day)
+
+              hour = floor ((sunAzimuth utc - sunriseAzimuth day) / unit)
+
+
+data BabylonianClockValue = BabylonianClockVal Int | BabylonianNight
+instance Show BabylonianClockValue where
+    show BabylonianNight = "Babylonian clock -* Night"
+    show (BabylonianClockVal hour) = "Babylonian clock -* " ++ show hour
+
 
 -- + -------------------------------------------------------------------- + --
 
@@ -313,7 +333,7 @@ sunsetAzimuth day =
 
 -- Finds the altitude at which Sun sets, from sun's position on the dial
 sunriseAzimuth :: Day -> Number
-sunriseAzimuth day = - (sunsetAzimuth day)
+sunriseAzimuth day = sunsetAzimuth day + pi
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --

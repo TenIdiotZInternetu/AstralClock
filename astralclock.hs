@@ -393,7 +393,7 @@ circlesIntersection (Circle (Vec2 x1 y1) r1) (Circle (Vec2 x2 y2) r2)
             yFromX x = (c + y1) - d * x
 
         in  if isNothing xRoots then Nothing
-            else Just $ mapTuple (\ x -> Vec2 (yFromX x) x) (fromJust xRoots)
+            else Just $ mapTuple (\ x -> Vec2 x (yFromX x)) (fromJust xRoots)
 
     | otherwise =
         let c = (- x1^2 + x2^2 - y1^2 + y2^2 + r1^2 - r2^2) / (2 * (x2 - x1)) - x1

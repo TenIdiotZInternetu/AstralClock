@@ -238,7 +238,7 @@ instance Clock SunPosition where
 
 data CelestialValues = CelestialVals 
 
-instance Show CelestialValues 
+instance Show CelestialValues where
 
 
 -- + -------------------------------------------------------------------- + --
@@ -354,6 +354,21 @@ inDays days = do
     (UTCTime day _) <- addUTCTime (fromIntegral days * dayDuration) <$> getCurrentTime
     return day
 
+
+-- + -------------------------------------------------------------------- + --
+
+sunAzimuth = celestialAzimuth Sun
+moonAzimuth = celestialAzimuth Moon
+
+sunsetAzimuth = azimuthAtSet Sun
+sunriseAzimuth = azimuthAtRise Sun
+moonsetAzimuth = azimuthAtSet Moon
+moonriseAzimuth = azimuthAtRise Moon
+
+sunsetTime = timeAtSet Sun
+sunriseTime = timeAtRise Sun
+moonsetTime = timeAtSet Moon
+moonriseTime = timeAtRise Moon
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --

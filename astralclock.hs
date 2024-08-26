@@ -290,8 +290,8 @@ sunsetAzimuth day =
     let sunPos = sunPosition (UTCTime day 0)
         dayCircle = Circle originPoint (magnitude sunPos)
         (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection dayCircle horizonLine
-    in  if x1 > x2 then azimuth (Vec2 x1 y1) + pi / 2           -- -pi, since azimuth is 0, when the sun points upwards
-        else azimuth (Vec2 x2 y2) + pi / 2
+    in  if x1 > x2 then azimuth (Vec2 x1 y1)     -- -pi, since azimuth is 0, when the sun points upwards
+        else azimuth (Vec2 x2 y2)
 
 -- Finds the altitude at which Sun sets, from sun's position on the dial
 sunriseAzimuth :: Day -> Float
@@ -322,18 +322,20 @@ magnitude :: Vec2 -> Float
 magnitude (Vec2 x y) = pythagorean x y
 
 -- Returns angle in radians, as if the point was in polar coordinates
-azimuth :: Vec2 -> Float
-azimuth (Vec2 x y) = atan2 y x
+azimuth :: Vec2 -> Number
+azimuth (Vec2 x y) = - (atan2 y x) + pi / 2
 
 normalized :: Vec2 -> Vec2
 normalized v = scaleVector (1 / magnitude v) v
 
 -- Returns vector of magnitude 1, with azimuth given in radians
-unitVector :: Float -> Vec2
-unitVector angle = Vec2 (cos angle) (sin angle)
+unitVector :: Number -> Vec2
+unitVector azimuth = Vec2 (cos theta) (sin theta)
+    where theta = -azimuth + pi / 2
 
 originPoint :: Vec2
 originPoint = Vec2 0 0
+
 
 instance Show Vec2 where
     show (Vec2 x y) = "[" ++ show x ++ ", " ++ show y ++ "]"

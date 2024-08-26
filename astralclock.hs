@@ -248,19 +248,20 @@ inDays days = do
     (UTCTime day _) <- addUTCTime (fromIntegral days * dayDuration) <$> getCurrentTime
     return day
 
-sunsetTime :: Day -> UTCTime
+sunsetTime :: Day -> TimeOfDay
 sunsetTime day =
     let azimuth = sunsetAzimuth day
         unit = pi / 12
         hours = (azimuth / unit) + 11            -- since azimuth 0 represents noon in CET
-    in  UTCTime day (realToFrac hours * realToFrac hourDuration)
+    in  timeToTimeOfDay (realToFrac hours * realToFrac hourDuration)
 
-sunriseTime :: Day -> UTCTime
+
+sunriseTime :: Day -> TimeOfDay
 sunriseTime day =
-    let sunset = sunsetTime day
-        noon = UTCTime day (11 * realToFrac hourDuration)
-        timeFromNoon = diffUTCTime sunset noon
-    in  addUTCTime (-timeFromNoon) noon          -- sunset and sunrise lie equal distance from noon on the dial
+    let sunset = timeOfDayToTime $ sunsetTime day
+        noon = 11 * realToFrac hourDuration
+        timeFromNoon = sunset - noon
+    in  timeToTimeOfDay $ noon - timeFromNoon          -- sunset and sunrise lie equal distance from noon on the dial
 
 
 -- + -------------------------------------------------------------------- + --

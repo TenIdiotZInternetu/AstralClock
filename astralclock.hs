@@ -287,7 +287,7 @@ sunsetTime :: Day -> TimeOfDay
 sunsetTime day =
     let azimuth = sunsetAzimuth day
         unit = fullAngle ./ 24
-        hours = (azimuth ./ unit) + 11                   -- since azimuth 0 represents noon in CET
+        hours = (azimuth / unit) + 11                   -- since azimuth 0 represents noon in CET
     in  timeToTimeOfDay (realToFrac hours * realToFrac hourDuration)
 
 

@@ -213,19 +213,32 @@ instance Clock BabylonianClock where
     type ClockValue BabylonianClock = BabylonianClockValue
 
     fromUtc :: BabylonianClock -> UTCTime -> ClockValue BabylonianClock
-    fromUtc _ utc = if afterSunset then BabylonianNight
+    fromUtc _ utc = if isNight then BabylonianNight
                     else BabylonianClockVal hour
         where (UTCTime day time) = utc
               unit = (sunsetAzimuth day .- sunriseAzimuth day) ./ 12
-              afterSunset = time > timeOfDayToTime (sunsetTime day)
+              isNight = time > timeOfDayToTime (sunsetTime day) ||
+                        time < timeOfDayToTime (sunriseTime day)
 
-              hour = floor $ (sunAzimuth utc .- sunriseAzimuth day) / unit
+              hour = floor $ (sunAzimuth utc .- sunriseAzimuth day) / unit + 1
 
 
 data BabylonianClockValue = BabylonianClockVal Int | BabylonianNight
 instance Show BabylonianClockValue where
     show BabylonianNight = "Babylonian clock -* Night"
     show (BabylonianClockVal hour) = "Babylonian clock -* " ++ show hour
+
+
+-- + -------------------------------------------------------------------- + --
+
+data SunPosition = SunPosition
+instance Clock SunPosition where
+    type ClockValue SunPosition = CelestialValues
+
+
+data CelestialValues = CelestialVals 
+
+instance Show CelestialValues 
 
 
 -- + -------------------------------------------------------------------- + --
@@ -268,10 +281,68 @@ data LeftRight = L | R deriving (Enum, Show, Eq)
 
 
 data RomanNumerals = XII | I | II | III | IV | V | VI | VII | VIII | IX | X | XI deriving (Enum, Show)
+data ZodiacSign = Cancer | Leo | Libra | Virgo | Scorpio | Sagittarius | 
+                  Capricorn | Aquarius | Pisces | Aries | Taurus | Gemini
+                  deriving (Enum, Show)
 
+data Occlusion = Day | Night | AVRORA | ORTVS | OCCASVS | CREPASCVS deriving (Enum)
 
 -- [[ -------------------------- Astronomy ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
+
+data CelestialBody = Sun | Moon 
+
+celestialGear :: CelestialBody -> Gear
+celestialGear Sun = sunGear
+celestialGear Moon = moonGear
+
+celestialAzimuth :: CelestialBody -> UTCTime -> Angle
+celestialAzimuth body = angleAtTime $ celestialGear body
+
+positionOnDial :: CelestialBody -> UTCTime -> Vec2
+positionOnDial body utc =
+    let hand = Ray originPoint (unitVector $ celestialAzimuth body utc)
+        zodiac = zodiacCircle utc
+    in  fst $ fromJust $ rayCircleIntersection hand zodiac
+
+-- Finds the azimuth at which Sun rises, from sun's position on the dial
+azimuthAtSet :: CelestialBody -> Day -> Angle
+azimuthAtSet body day =
+    let position = positionOnDial body (UTCTime day 0)
+        orbit = Circle originPoint (magnitude position)
+        (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection orbit horizonLine
+    in  if x1 > x2 then vecAzimuth (Vec2 x1 y1)
+        else vecAzimuth (Vec2 x2 y2)
+
+azimuthAtRise :: CelestialBody -> Day -> Angle
+azimuthAtRise body day = negateAngle $ azimuthAtSet body day
+
+timeAtSet :: CelestialBody -> Day -> TimeOfDay
+timeAtSet body day =
+    let azimuth = azimuthAtSet body day
+        unit = fullAngle ./ 24
+        hours = (azimuth / unit) + 11                   -- since azimuth 0 represents noon in CET
+    in  timeToTimeOfDay (realToFrac hours * realToFrac hourDuration)
+
+
+timeAtRise :: CelestialBody -> Day -> TimeOfDay
+timeAtRise body day =
+    let sunset = timeOfDayToTime $ timeAtRise body day
+        noon = 11 * realToFrac hourDuration
+        timeFromNoon = sunset - noon
+    in  timeToTimeOfDay $ noon - timeFromNoon           -- set and rise lies at equal distance from noon on the dial
+
+
+-- + -------------------------------------------------------------------- + --
+
+-- Creates circle from rotation (in radians) of the Zodiac gear 
+zodiacCircle :: UTCTime -> Circle
+zodiacCircle utc = Circle center zodiacRadius
+    where gearAzimuth = angleAtTime zodiacGear utc
+          center = scaleVector zodiacDistanceFromOrigin (unitVector gearAzimuth)
+
+
+-- + -------------------------------------------------------------------- + --
 
 today :: IO Day
 today = do
@@ -283,57 +354,6 @@ inDays days = do
     (UTCTime day _) <- addUTCTime (fromIntegral days * dayDuration) <$> getCurrentTime
     return day
 
-sunsetTime :: Day -> TimeOfDay
-sunsetTime day =
-    let azimuth = sunsetAzimuth day
-        unit = fullAngle ./ 24
-        hours = (azimuth / unit) + 11                   -- since azimuth 0 represents noon in CET
-    in  timeToTimeOfDay (realToFrac hours * realToFrac hourDuration)
-
-
-sunriseTime :: Day -> TimeOfDay
-sunriseTime day =
-    let sunset = timeOfDayToTime $ sunsetTime day
-        noon = 11 * realToFrac hourDuration
-        timeFromNoon = sunset - noon
-    in  timeToTimeOfDay $ noon - timeFromNoon           -- sunset and sunrise lie equal distance from noon on the dial
-
-
--- + -------------------------------------------------------------------- + --
-
-sunAzimuth :: UTCTime -> Angle
-sunAzimuth = angleAtTime sunGear
-
-moonAzimuth :: UTCTime -> Angle
-moonAzimuth = angleAtTime moonGear
-
--- + -------------------------------------------------------------------- + --
-
--- Creates circle from rotation (in radians) of the Zodiac gear 
-zodiacCircle :: UTCTime -> Circle
-zodiacCircle utc = Circle center zodiacRadius
-    where gearAzimuth = angleAtTime zodiacGear utc
-          center = scaleVector zodiacDistanceFromOrigin (unitVector gearAzimuth)
-
--- Finds Sun's position on the dial, based on zodiac circle, and the rotation of the sun gear
-sunPosition :: UTCTime -> Vec2
-sunPosition utc =
-    let sunHandle = Ray originPoint (unitVector $ sunAzimuth utc)
-        zodiac = zodiacCircle utc
-    in  fst $ fromJust $ rayCircleIntersection sunHandle zodiac
-
--- Finds the azimuth at which Sun rises, from sun's position on the dial
-sunsetAzimuth :: Day -> Number
-sunsetAzimuth day =
-    let sunPos = sunPosition (UTCTime day 0)
-        dayCircle = Circle originPoint (magnitude sunPos)
-        (Vec2 x1 y1, Vec2 x2 y2) = fromJust $ circlesIntersection dayCircle horizonLine
-    in  if x1 > x2 then azimuth (Vec2 x1 y1)
-        else azimuth (Vec2 x2 y2)
-
--- Finds the altitude at which Sun sets, from sun's position on the dial
-sunriseAzimuth :: Day -> Number
-sunriseAzimuth day = negateAngle $ sunsetAzimuth day
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
@@ -406,8 +426,8 @@ magnitude :: Vec2 -> Number
 magnitude (Vec2 x y) = pythagorean x y
 
 -- Returns angle in radians, as if the point was in polar coordinates
-azimuth :: Vec2 -> Angle
-azimuth (Vec2 x y) = (- atan2 y x) .+ rightAngle
+vecAzimuth :: Vec2 -> Angle
+vecAzimuth (Vec2 x y) = (- atan2 y x) .+ rightAngle
 
 normalized :: Vec2 -> Vec2
 normalized v = scaleVector (1 / magnitude v) v

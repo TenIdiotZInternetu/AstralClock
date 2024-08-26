@@ -6,6 +6,8 @@ import Prelude hiding (truncate)
 import Data.Maybe (isNothing, fromJust)
 import Distribution.Compat.Time (getCurTime)
 
+type Number = Double
+
 -- [[ ------------------------ Time Constants -------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
 
@@ -42,10 +44,10 @@ horizonLine = Circle (Vec2 0.0 (-0.7838)) 1.0219
 twilightLine :: Circle
 twilightLine = Circle (Vec2 0.0 (-0.5385)) 0.7083
 
-zodiacRadius :: Float
+zodiacRadius :: Number
 zodiacRadius = 0.7149
 
-zodiacDistanceFromOrigin :: Float
+zodiacDistanceFromOrigin :: Number
 zodiacDistanceFromOrigin = 0.2851
 
 
@@ -63,15 +65,15 @@ zodiacDistanceFromOrigin = 0.2851
 -- Gear (revolution duration, epoch)
 data Gear = Gear NominalDiffTime UTCTime
 
-angularSpeed :: Gear -> Float
+angularSpeed :: Gear -> Number
 angularSpeed (Gear revolution _) = realToFrac (2 * pi) / realToFrac revolution
 
 -- Returns angular distance (radians) the gear travels in given time
-rotationAfterTime :: Gear -> NominalDiffTime -> Float
+rotationAfterTime :: Gear -> NominalDiffTime -> Number
 rotationAfterTime gear time = realToFrac time * angularSpeed gear
 
 -- Returns the angle the gear makes with its default position at epoch
-angleAtTime :: Gear -> UTCTime -> Float
+angleAtTime :: Gear -> UTCTime -> Number
 angleAtTime gear utc =
     let (Gear _ epoch) = gear
         distanceTraveled = rotationAfterTime gear $ diffUTCTime utc epoch
@@ -212,7 +214,7 @@ instance Clock MoonPhase where
 
 
 -- MoonPhaseVal (side from which the moon is illuminated, portion of the moon that is illuminated <0;1>)
-data MoonPhaseValue = MoonPhaseVal LeftRight Float
+data MoonPhaseValue = MoonPhaseVal LeftRight Number
 instance Show MoonPhaseValue where
     show (MoonPhaseVal side portion) =
         let percentage = show (portion * 100) ++ "%"
@@ -250,23 +252,23 @@ sunsetTime :: Day -> UTCTime
 sunsetTime day =
     let azimuth = sunsetAzimuth day
         unit = pi / 12
-        hours = (azimuth / unit) - 1             -- since utc is 1 hour behind cet
+        hours = (azimuth / unit) + 11            -- since azimuth 0 represents noon in CET
     in  UTCTime day (realToFrac hours * realToFrac hourDuration)
 
 sunriseTime :: Day -> UTCTime
 sunriseTime day =
     let sunset = sunsetTime day
-        noon = UTCTime day (12 * realToFrac hourDuration)
+        noon = UTCTime day (11 * realToFrac hourDuration)
         timeFromNoon = diffUTCTime sunset noon
-    in  addUTCTime (-timeFromNoon) noon
+    in  addUTCTime (-timeFromNoon) noon          -- sunset and sunrise lie equal distance from noon on the dial
 
 
 -- + -------------------------------------------------------------------- + --
 
-sunAzimuth :: UTCTime -> Float
+sunAzimuth :: UTCTime -> Number
 sunAzimuth = angleAtTime sunGear
 
-moonAzimuth :: UTCTime -> Float
+moonAzimuth :: UTCTime -> Number
 moonAzimuth = angleAtTime moonGear
 
 -- + -------------------------------------------------------------------- + --
@@ -274,7 +276,7 @@ moonAzimuth = angleAtTime moonGear
 -- Creates circle from rotation (in radians) of the Zodiac gear 
 zodiacCircle :: UTCTime -> Circle
 zodiacCircle utc = Circle center zodiacRadius
-    where gearAzimuth = angleAtTime zodiacGear utc + pi / 2
+    where gearAzimuth = angleAtTime zodiacGear utc
           center = scaleVector zodiacDistanceFromOrigin (unitVector gearAzimuth)
 
 -- Finds Sun's position on the dial, based on zodiac circle, and the rotation of the sun gear
@@ -285,7 +287,7 @@ sunPosition utc =
     in  fst $ fromJust $ rayCircleIntersection sunHandle zodiac
 
 -- Finds the azimuth at which Sun rises, from sun's position on the dial
-sunsetAzimuth :: Day -> Float
+sunsetAzimuth :: Day -> Number
 sunsetAzimuth day =
     let sunPos = sunPosition (UTCTime day 0)
         dayCircle = Circle originPoint (magnitude sunPos)
@@ -294,14 +296,14 @@ sunsetAzimuth day =
         else azimuth (Vec2 x2 y2)
 
 -- Finds the altitude at which Sun sets, from sun's position on the dial
-sunriseAzimuth :: Day -> Float
+sunriseAzimuth :: Day -> Number
 sunriseAzimuth day = - (sunsetAzimuth day)
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
 
 -- 2D Vector (x coordinate, y coordinate)
-data Vec2 = Vec2 Float Float deriving (Eq)
+data Vec2 = Vec2 Number Number deriving (Eq)
 
 addVectors :: Vec2 -> Vec2 -> Vec2
 addVectors (Vec2 x1 y1) (Vec2 x2 y2) = Vec2 (x1 + x2) (y1 + y2)
@@ -312,13 +314,13 @@ negVector (Vec2 x y) = Vec2 (-x) (-y)
 subVectors :: Vec2 -> Vec2 -> Vec2
 subVectors v1 v2 = addVectors v1 (negVector v2)
 
-scaleVector :: Float -> Vec2 -> Vec2
+scaleVector :: Number -> Vec2 -> Vec2
 scaleVector t (Vec2 x y) = Vec2 (t * x) (t * y)
 
-dot :: Vec2 -> Vec2 -> Float
+dot :: Vec2 -> Vec2 -> Number
 dot (Vec2 x1 y1) (Vec2 x2 y2) = x1 * x2 + y1 * y2
 
-magnitude :: Vec2 -> Float
+magnitude :: Vec2 -> Number
 magnitude (Vec2 x y) = pythagorean x y
 
 -- Returns angle in radians, as if the point was in polar coordinates
@@ -346,14 +348,14 @@ instance Show Vec2 where
 data Ray = Ray Vec2 Vec2
 
 -- Return point lying on ray at specified parameter t
-rayPointAt :: Ray -> Float -> Vec2
+rayPointAt :: Ray -> Number -> Vec2
 rayPointAt (Ray origin direction) t = addVectors origin (scaleVector t direction)
 
 
 -- + -------------------------------------------------------------------- + --
 
 -- Circle (center, radius)
-data Circle = Circle Vec2 Float
+data Circle = Circle Vec2 Number
 instance Show Circle where
     show (Circle center radius) = "Circle " ++ show center ++ " Radius: " ++ show radius
 
@@ -409,7 +411,7 @@ circlesIntersection (Circle (Vec2 x1 y1) r1) (Circle (Vec2 x2 y2) r2)
 
 -- Solves x for ax^2 + bx + c = 0
 -- Returnes both solutions if they exist, returns Nothing if none exist
-quadraticFormula :: Float -> Float -> Float -> Maybe (Float, Float)
+quadraticFormula :: Number -> Number -> Number -> Maybe (Number, Number)
 quadraticFormula a b c =
     let d = b^2 - 4 * a * c
     in  if d < 0 then Nothing
@@ -418,7 +420,7 @@ quadraticFormula a b c =
                    (-b - sqrt d) / (2 * a))
 
 -- Computes the length of hypotenuse from the Pythagorean theorem
-pythagorean :: Float -> Float -> Float
+pythagorean :: Number -> Number -> Number
 pythagorean a b = sqrt (a^2 + b^2)
 
 

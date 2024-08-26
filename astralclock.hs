@@ -137,7 +137,7 @@ instance Clock CETClock where
     fromUtc :: CETClock -> UTCTime -> CETClockValue
     fromUtc _ utc = CETClockVal hour
         where unit = straightAngle ./ 12
-              hour = toEnum $ floor $ (angleAtTime sunGear utc ./ unit) `mod'` 12
+              hour = toEnum $ floor $ (angleAtTime sunGear utc / unit) `mod'` 12
 
 
 newtype CETClockValue = CETClockVal RomanNumerals
@@ -165,7 +165,7 @@ instance Clock OldCzechClock where
               lastSunsetAzimuth = if time > todaysSunset then sunsetAzimuth day
                                   else sunsetAzimuth (addDays (-1) day)
 
-              hour = floor $ (sunAzimuth utc .- lastSunsetAzimuth) ./ unit
+              hour = floor $ (sunAzimuth utc .- lastSunsetAzimuth) / unit
 
 
 newtype OldCzechClockValue = OldCzechClockVal Int
@@ -191,7 +191,7 @@ instance Clock SiderealClock where
     fromUtc _ utc = SiderealClockVal hour
         where unit = straightAngle ./ 12
               starHandAngle = angleAtTime zodiacGear utc .+ rightAngle   -- At epoch, star points directly eastwards
-              hour = toEnum $ floor $ (starHandAngle ./ unit) `mod'` 12
+              hour = toEnum $ floor $ (starHandAngle / unit) `mod'` 12
 
 newtype SiderealClockValue = SiderealClockVal RomanNumerals
 instance Show SiderealClockValue where
@@ -219,7 +219,7 @@ instance Clock BabylonianClock where
               unit = (sunsetAzimuth day .- sunriseAzimuth day) ./ 12
               afterSunset = time > timeOfDayToTime (sunsetTime day)
 
-              hour = floor $ (sunAzimuth utc .- sunriseAzimuth day) ./ unit
+              hour = floor $ (sunAzimuth utc .- sunriseAzimuth day) / unit
 
 
 data BabylonianClockValue = BabylonianClockVal Int | BabylonianNight
@@ -267,7 +267,7 @@ data LeftRight = L | R deriving (Enum, Show, Eq)
 -- + -------------------------------------------------------------------- + --
 
 
-data RomanNumerals = I | II | III | IV | V | VI | VII | VIII | IX | X | XI | XII deriving (Enum, Show)
+data RomanNumerals = XII | I | II | III | IV | V | VI | VII | VIII | IX | X | XI deriving (Enum, Show)
 
 
 -- [[ -------------------------- Astronomy ----------------------------- ]] --
@@ -351,6 +351,7 @@ rightAngle :: Angle
 rightAngle = pi / 2
 
 -- Angle additian
+infixl 6 .+
 (.+) :: Angle -> Angle -> Angle
 a .+ b = (a + b) `mod'` fullAngle
 
@@ -361,14 +362,17 @@ negateAngle :: Angle -> Angle
 negateAngle a = fullAngle - a `mod'` fullAngle
 
 -- Angle subtraction
+infixl 6 .-
 (.-) :: Angle -> Angle -> Angle
 a .- b =  a .+ negateAngle b
 
 -- Angle multiplication
+infixl 7 .*
 (.*) :: Number -> Angle -> Angle
 a .* b = (a * b) `mod'` fullAngle
 
 -- Angle division
+infixl 7 ./
 (./) :: Angle -> Number -> Angle
 a ./ b = a .* (1 / b)
 

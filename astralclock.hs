@@ -242,19 +242,19 @@ today = do
     return day
 
 inDays :: Int -> IO Day
-inDays days = do 
+inDays days = do
     (UTCTime day _) <- addUTCTime (fromIntegral days * dayDuration) <$> getCurrentTime
     return day
 
 sunsetTime :: Day -> UTCTime
-sunsetTime day = 
+sunsetTime day =
     let azimuth = sunsetAzimuth day
         unit = pi / 12
         hours = (azimuth / unit) - 1             -- since utc is 1 hour behind cet
     in  UTCTime day (realToFrac hours * realToFrac hourDuration)
 
 sunriseTime :: Day -> UTCTime
-sunriseTime day = 
+sunriseTime day =
     let sunset = sunsetTime day
         noon = UTCTime day (12 * realToFrac hourDuration)
         timeFromNoon = diffUTCTime sunset noon
@@ -301,7 +301,7 @@ sunsetAzimuth utc = - (sunriseAzimuth utc)
 -- [[ ------------------------------------------------------------------ ]] --
 
 -- 2D Vector (x coordinate, y coordinate)
-data Vec2 = Vec2 Float Float
+data Vec2 = Vec2 Float Float deriving (Eq)
 
 addVectors :: Vec2 -> Vec2 -> Vec2
 addVectors (Vec2 x1 y1) (Vec2 x2 y2) = Vec2 (x1 + x2) (y1 + y2)
@@ -379,15 +379,27 @@ rayCircleIntersection ray (Circle center radius) =
 -- Returns intersections of 2 circles if they exist, return Nothing if not
 -- Points are not in any particular order, if circles intersect in only one point, both results will be the same
 circlesIntersection :: Circle -> Circle -> Maybe (Vec2, Vec2)
-circlesIntersection (Circle (Vec2 x1 y1) r1) (Circle (Vec2 x2 y2) r2) =
-    let c = (- x1^2 + x2^2 - y1^2 + y2^2 + r1^2 - r2^2) / (2 * (x2 - x1)) - x1
-        d = (y2 - y1) / (x2 - x1)
+circlesIntersection (Circle (Vec2 x1 y1) r1) (Circle (Vec2 x2 y2) r2)
+    | Vec2 x1 x2 == Vec2 x1 x2 = Nothing        -- Circles have the same center
+    | x1 == x2 =
+        let c = (- x1^2 + x2^2 - y1^2 + y2^2 + r1^2 - r2^2) / (2 * (y2 - y1)) - y1
+            d = (x2 - x1) / (y2 - y1)
 
-        yRoots = quadraticFormula (d^2 + 1) (-2 * c * d - 2 * y1) (-r1^2 + c^2 + y1^2)
-        xFromY y = (c + x1) - d * y
+            xRoots = quadraticFormula (d^2 + 1) (-2 * c * d - 2 * x1) (-r1^2 + c^2 + x1^2)
+            yFromX x = (c + y1) - d * x
 
-    in  if isNothing yRoots then Nothing
-        else Just $ mapTuple (\ y -> Vec2 (xFromY y) y) (fromJust yRoots)
+        in  if isNothing xRoots then Nothing
+            else Just $ mapTuple (\ x -> Vec2 (yFromX x) x) (fromJust xRoots)
+
+    | otherwise =
+        let c = (- x1^2 + x2^2 - y1^2 + y2^2 + r1^2 - r2^2) / (2 * (x2 - x1)) - x1
+            d = (y2 - y1) / (x2 - x1)
+
+            yRoots = quadraticFormula (d^2 + 1) (-2 * c * d - 2 * y1) (-r1^2 + c^2 + y1^2)
+            xFromY y = (c + x1) - d * y
+
+        in  if isNothing yRoots then Nothing
+            else Just $ mapTuple (\ y -> Vec2 (xFromY y) y) (fromJust yRoots)
 
 -- + -------------------------------------------------------------------- + --
 

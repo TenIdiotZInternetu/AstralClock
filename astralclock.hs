@@ -198,9 +198,16 @@ data MoonPhase = MoonPhase
 instance Clock MoonPhase where
     type ClockValue MoonPhase = MoonPhaseValue
 
+    fromUtc :: MoonPhase -> UTCTime -> MoonPhaseValue
+    fromUtc _ utc = 
+        let gearAngle = angleAtTime moonPhaseGear utc
+            side = if sin gearAngle > 0 then L
+                   else R
+            portion = (cos gearAngle + 1) / 2
+        in  MoonPhaseVal side portion
 
 
-
+-- MoonPhaseVal (side from which the moon is illuminated, portion of the moon that is illuminated <0;1>)
 data MoonPhaseValue = MoonPhaseVal LeftRight Float
 instance Show MoonPhaseValue where
     show (MoonPhaseVal side portion) = 

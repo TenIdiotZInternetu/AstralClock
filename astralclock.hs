@@ -5,6 +5,7 @@ import Data.Time.Calendar.OrdinalDate
 import Prelude hiding (truncate)
 import Data.Maybe (isNothing, fromJust)
 import Distribution.Compat.Time (getCurTime)
+import Control.Arrow (ArrowChoice(right))
 
 type Number = Double
 
@@ -337,6 +338,38 @@ sunriseAzimuth day = sunsetAzimuth day + pi
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
+
+-- Alias for angle in radians
+type Angle = Number
+
+fullAngle :: Angle
+fullAngle = 2 * pi
+
+straightAngle :: Angle
+straightAngle = pi
+
+rightAngle :: Angle
+rightAngle = pi / 2
+
+addAngles :: Angle -> Angle -> Angle
+addAngles a b = (a + b) `mod'` fullAngle
+
+oppositeAngle :: Angle -> Angle
+oppositeAngle a = addAngles a straightAngle
+
+negateAngle :: Angle -> Angle
+negateAngle a = fullAngle - a `mod'` fullAngle
+
+diffAngles :: Angle -> Angle -> Angle
+diffAngles a b = addAngles a (negateAngle b)
+
+fromDegrees :: Number -> Angle
+fromDegrees degs = degs / 180 * pi
+
+toDegrees :: Angle -> Number
+toDegrees rads = rads / pi * 180
+
+-- + -------------------------------------------------------------------- + --
 
 -- 2D Vector (x coordinate, y coordinate)
 data Vec2 = Vec2 Number Number deriving (Eq)

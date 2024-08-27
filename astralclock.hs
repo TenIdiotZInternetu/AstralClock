@@ -296,6 +296,8 @@ celestialGear :: CelestialBody -> Gear
 celestialGear Sun = sunGear
 celestialGear Moon = moonGear
 
+-- Azimuth is the angle the celestial body makes with the zenith.
+-- Zenith is the direction perpendicular to ground, sun reaches zenith at noon
 celestialAzimuth :: CelestialBody -> UTCTime -> Angle
 celestialAzimuth body = angleAtTime $ celestialGear body
 
@@ -335,7 +337,7 @@ timeAtRise body day =
 
 -- + -------------------------------------------------------------------- + --
 
--- Creates circle from rotation (in radians) of the Zodiac gear 
+-- Creates circle reprezenting the zodiac dial at given time
 zodiacCircle :: UTCTime -> Circle
 zodiacCircle utc = Circle center zodiacRadius
     where gearAzimuth = angleAtTime zodiacGear utc
@@ -356,6 +358,8 @@ inDays days = do
 
 
 -- + -------------------------------------------------------------------- + --
+
+-- Convenience functions
 
 sunAzimuth = celestialAzimuth Sun
 moonAzimuth = celestialAzimuth Moon

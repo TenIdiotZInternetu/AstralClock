@@ -240,11 +240,12 @@ newtype CelestialPosition = CelestialPosition {
 instance Clock CelestialPosition where
     type ClockValue CelestialPosition = CelestialValues
 
-    fromUtc this utc = CelestialVals body azimuth altitude zodiac rise set
+    fromUtc this utc = CelestialVals body azimuth occluded altitude zodiac rise set
         where body = celestialBody this
               (UTCTime day _) = utc
 
               azimuth = celestialAzimuth body utc
+              occluded = occlusion body utc
               altitude = undefined
               zodiac = undefined
               rise = timeAtRise body day
@@ -254,6 +255,7 @@ instance Clock CelestialPosition where
 data CelestialValues = CelestialVals {
     clocksCelestialBody :: CelestialBody,
     azimuth :: Angle,
+    occluded :: Occlusion,
     altitude :: Angle,
     zodiac :: ZodiacSign,
     rise :: TimeOfDay,
@@ -262,10 +264,52 @@ data CelestialValues = CelestialVals {
 
 instance Show CelestialValues where
     show vals = "Celestial positions of " ++  show (clocksCelestialBody vals) ++ "\n" ++
-                "Azimuth: " ++ show (toDegrees (azimuth vals)) ++ "°\n" ++
+                "Azimuth: " ++ show (toDegrees (azimuth vals)) ++ "° " ++ 
+                    show (occluded vals) ++ "\n" ++
                 "Time of rise: " ++ show (rise vals) ++ "\n" ++
                 "Time of set: " ++ show (set vals)
 
+
+-- + -------------------------------------------------------------------- + --
+
+-- Astronomical clock, combination of all the previous clocks
+
+data AstronomicalClock = AstronomicalClock
+instance Clock AstronomicalClock where
+    type ClockValue AstronomicalClock = AstronomicalClockValues
+
+    fromUtc _ utc = AstronomicalClockVals
+        (fromUtc CETClock utc)
+        (fromUtc OldCzechClock utc)
+        (fromUtc SiderealClock utc)
+        (fromUtc BabylonianClock utc)
+        (fromUtc MoonPhase utc)
+        (fromUtc (CelestialPosition Sun) utc)
+        (fromUtc (CelestialPosition Moon) utc)
+
+data AstronomicalClockValues = AstronomicalClockVals {
+    acCET :: CETClockValue,
+    acOldCzech :: OldCzechClockValue,
+    acSidereal :: SiderealClockValue,
+    acBabylonian :: BabylonianClockValue,
+    acMoonPhase :: MoonPhaseValue,
+    acSun :: CelestialValues,
+    acMoon :: CelestialValues
+}
+
+instance Show AstronomicalClockValues where
+    show vals = "\n==[[======= Prague Astronomical Clock =======]]==" ++ "\n" ++
+                show (acCET vals) ++ "\n" ++
+                show (acOldCzech vals) ++ "\n" ++
+                show (acSidereal vals) ++ "\n" ++
+                show (acBabylonian vals) ++ "\n" ++
+                "-- + --------------------------------------- + --" ++ "\n" ++
+                show (acMoonPhase vals) ++ "\n" ++ 
+                "-- + --------------------------------------- + --" ++ "\n" ++
+                show (acSun vals) ++ "\n" ++
+                "-- + --------------------------------------- + --" ++ "\n" ++
+                show (acMoon vals) ++ "\n" ++
+                "=================================================" ++ "\n"
 
 -- + -------------------------------------------------------------------- + --
 

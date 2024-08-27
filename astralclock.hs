@@ -264,10 +264,10 @@ data CelestialValues = CelestialVals {
 
 instance Show CelestialValues where
     show vals = "Celestial positions of " ++  show (clocksCelestialBody vals) ++ "\n" ++
-                "Azimuth: " ++ show (toDegrees (azimuth vals)) ++ "° " ++ 
+                "Azimuth: " ++ take 5 (show $ toDegrees (azimuth vals)) ++ "° " ++ 
                     show (occluded vals) ++ "\n" ++
-                "Time of rise: " ++ show (rise vals) ++ "\n" ++
-                "Time of set: " ++ show (set vals)
+                "Time of rise: " ++ take 8 (show $ rise vals) ++ "\n" ++
+                "Time of set: " ++ take 8 (show $ set vals)
 
 
 -- + -------------------------------------------------------------------- + --
@@ -335,7 +335,7 @@ instance Clock MoonPhase where
 data MoonPhaseValue = MoonPhaseVal LeftRight Number
 instance Show MoonPhaseValue where
     show (MoonPhaseVal side portion) =
-        let percentage = show (portion * 100) ++ "%"
+        let percentage = take 5 (show $ portion * 100) ++ "%"
             base = "Moon Phase: " ++ show side ++ " " ++ percentage
             inQuarter = portion > 0.45 && portion < 0.55
         in  if portion > 0.95 then base ++ " (Full moon)"

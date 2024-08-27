@@ -361,7 +361,7 @@ timeAtRise body day =
 
 -- + -------------------------------------------------------------------- + --
 
--- Colors on the inner dial represent how much is celestial body occluded by the shadow of the Earth
+-- Colors on the inner dial represent how much is celestial body occluded by the Earth's horizon
 -- Both Sun and Moon travel through all of its parts during day, 
 --      but its easier to describe with the position of the Sun
 

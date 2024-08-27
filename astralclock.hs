@@ -577,3 +577,7 @@ pythagorean a b = sqrt (a^2 + b^2)
 
 mapTuple :: (a -> b) -> (a, a) -> (b, b)
 mapTuple f (a, b) = (f a, f b)
+
+
+between :: Ord n => n -> (n, n) -> n
+between val (lower, upper) = val > lower && val < upper

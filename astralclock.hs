@@ -233,6 +233,42 @@ instance Show BabylonianClockValue where
 
 -- + -------------------------------------------------------------------- + --
 
+-- Moon Phase
+-- Shown on the small moon model on the moon hand,
+-- The model of moon on the moon hand is actually half-white, half-black,
+--   and revolves around its axis in the opposite direction of the hand
+
+data MoonPhase = MoonPhase
+instance Clock MoonPhase where
+    type ClockValue MoonPhase = MoonPhaseValue
+
+    fromUtc :: MoonPhase -> UTCTime -> MoonPhaseValue
+    fromUtc _ utc =
+        let gearAngle = angleAtTime moonPhaseGear utc
+            side = if sin gearAngle > 0 then L
+                   else R
+            portion = (cos gearAngle + 1) / 2
+        in  MoonPhaseVal side portion
+
+
+-- MoonPhaseVal (side from which the moon is illuminated, portion of the moon that is illuminated <0;1>)
+data MoonPhaseValue = MoonPhaseVal LeftRight Number
+instance Show MoonPhaseValue where
+    show (MoonPhaseVal side portion) =
+        let percentage = take 5 (show $ portion * 100) ++ "%"
+            base = "Moon Phase: " ++ show side ++ " " ++ percentage
+            inQuarter = portion > 0.45 && portion < 0.55
+        in  if portion > 0.95 then base ++ " (Full moon)"
+            else if inQuarter && side == R then base ++ " (First Quarter)"
+            else if inQuarter && side == L then base ++ " (Last Quarter)"
+            else if portion < 0.05 then base ++ " (New Moon)"
+            else base
+
+
+data LeftRight = L | R deriving (Enum, Show, Eq)
+
+-- + -------------------------------------------------------------------- + --
+
 -- Not really a clock, but a collection of interesting informations about position of Sun and Moon
 
 newtype CelestialPosition = CelestialPosition {
@@ -312,44 +348,6 @@ instance Show AstronomicalClockValues where
                 "-- + --------------------------------------- + --" ++ "\n" ++
                 show (acMoon vals) ++ "\n" ++
                 "=================================================" ++ "\n"
-
--- + -------------------------------------------------------------------- + --
-
--- Moon Phase
--- Shown on the small moon model on the moon hand,
--- The model of moon on the moon hand is actually half-white, half-black,
---   and revolves around its axis in the opposite direction of the hand
-
-data MoonPhase = MoonPhase
-instance Clock MoonPhase where
-    type ClockValue MoonPhase = MoonPhaseValue
-
-    fromUtc :: MoonPhase -> UTCTime -> MoonPhaseValue
-    fromUtc _ utc =
-        let gearAngle = angleAtTime moonPhaseGear utc
-            side = if sin gearAngle > 0 then L
-                   else R
-            portion = (cos gearAngle + 1) / 2
-        in  MoonPhaseVal side portion
-
-
--- MoonPhaseVal (side from which the moon is illuminated, portion of the moon that is illuminated <0;1>)
-data MoonPhaseValue = MoonPhaseVal LeftRight Number
-instance Show MoonPhaseValue where
-    show (MoonPhaseVal side portion) =
-        let percentage = take 5 (show $ portion * 100) ++ "%"
-            base = "Moon Phase: " ++ show side ++ " " ++ percentage
-            inQuarter = portion > 0.45 && portion < 0.55
-        in  if portion > 0.95 then base ++ " (Full moon)"
-            else if inQuarter && side == R then base ++ " (First Quarter)"
-            else if inQuarter && side == L then base ++ " (Last Quarter)"
-            else if portion < 0.05 then base ++ " (New Moon)"
-            else base
-
-
-data LeftRight = L | R deriving (Enum, Show, Eq)
-
--- + -------------------------------------------------------------------- + --
 
 
 data RomanNumerals = XII | I | II | III | IV | V | VI | VII | VIII | IX | X | XI deriving (Enum, Show)

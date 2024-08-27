@@ -40,7 +40,7 @@ ariesTropic = Circle originPoint 4.298
 -- These value are given by latitude of the Prague Astronomical Clock (50.0871°)
 
 horizonLine :: Circle
-horizonLine = Circle (Vec2 0.0 (-0.7838)) 1.0219
+horizonLine = Circle (Vec2 0.0 (-0.7038)) 1.0219
 
 twilightLine :: Circle
 twilightLine = Circle (Vec2 0.0 (-0.5385)) 0.7083

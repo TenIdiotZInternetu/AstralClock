@@ -158,14 +158,16 @@ instance Clock OldCzechClock where
     type ClockValue OldCzechClock = OldCzechClockValue
 
     fromUtc :: OldCzechClock -> UTCTime -> OldCzechClockValue
-    fromUtc _ utc = OldCzechClockVal hour
+    fromUtc _ utc = OldCzechClockVal hour1to24
         where (UTCTime day time) = utc
               unit = fullAngle ./ 24
               todaysSunset = timeOfDayToTime $ sunsetTime day
               lastSunsetAzimuth = if time > todaysSunset then sunsetAzimuth day
                                   else sunsetAzimuth (addDays (-1) day)
 
-              hour = floor $ (sunAzimuth utc .- lastSunsetAzimuth) / unit
+              hour0to23 = floor $ (sunAzimuth utc .- lastSunsetAzimuth) / unit
+              hour1to24 = if hour0to23 == 0 then 24
+                          else hour0to23
 
 
 newtype OldCzechClockValue = OldCzechClockVal Int

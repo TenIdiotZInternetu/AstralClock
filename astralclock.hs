@@ -231,14 +231,39 @@ instance Show BabylonianClockValue where
 
 -- + -------------------------------------------------------------------- + --
 
-data SunPosition = SunPosition
-instance Clock SunPosition where
-    type ClockValue SunPosition = CelestialValues
+newtype CelestialPosition = CelestialPosition {
+    celestialBody :: CelestialBody
+}
+
+instance Clock CelestialPosition where
+    type ClockValue CelestialPosition = CelestialValues
+
+    fromUtc this utc = CelestialVals body azimuth altitude zodiac rise set
+        where body = celestialBody this
+              (UTCTime day _) = utc
+
+              azimuth = celestialAzimuth body utc
+              altitude = undefined
+              zodiac = undefined
+              rise = timeAtRise body day
+              set = timeAtSet body day 
 
 
-data CelestialValues = CelestialVals 
+data CelestialValues = CelestialVals {
+    clocksCelestialBody :: CelestialBody,
+    azimuth :: Angle,
+    altitude :: Angle,
+    zodiac :: ZodiacSign,
+    rise :: TimeOfDay,
+    set :: TimeOfDay
+}
 
 instance Show CelestialValues where
+    show vals = "Celestial positions of " ++  show (clocksCelestialBody vals) ++ "\n" ++
+                "Azimuth: " ++ show (toDegrees (azimuth vals)) ++ "°\n" ++
+                "Time of rise: " ++ show (rise vals) ++ "\n" ++
+                "Time of set: " ++ show (set vals)
+
 
 
 -- + -------------------------------------------------------------------- + --
@@ -290,7 +315,11 @@ data Occlusion = Day | Night | AVRORA | ORTVS | OCCASVS | CREPASCVS deriving (En
 -- [[ -------------------------- Astronomy ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
 
-data CelestialBody = Sun | Moon 
+-- Sun and Moon share calculation for their position on their celestial sphere
+-- The only difference is the speed at which they revolve around the Earth
+-- This speed is given by the gear they sit on
+
+data CelestialBody = Sun | Moon deriving (Show)
 
 celestialGear :: CelestialBody -> Gear
 celestialGear Sun = sunGear
@@ -307,7 +336,6 @@ positionOnDial body utc =
         zodiac = zodiacCircle utc
     in  fst $ fromJust $ rayCircleIntersection hand zodiac
 
--- Finds the azimuth at which Sun rises, from sun's position on the dial
 azimuthAtSet :: CelestialBody -> Day -> Angle
 azimuthAtSet body day =
     let position = positionOnDial body (UTCTime day 0)

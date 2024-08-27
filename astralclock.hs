@@ -422,27 +422,26 @@ data Occlusion = Day | Night | AVRORA | ORTVS | OCCASVS | CREPASCVS deriving (En
 occlusion :: CelestialBody -> UTCTime -> Occlusion
 occlusion body utc
     |  between azimuth (set .+ nightAngle, rise .- nightAngle) = Night
-    |  between azimuth (rise .- nightAngle, rise) = AVRORA
-    |  between azimuth (set, set .+ nightAngle) = CREPASCVS
-    |  babylonTime == 1 = ORTVS
-    |  babylonTime == 12 = OCCASVS
-    |  otherwise = Day
+    |  between azimuth (rise .- nightAngle, rise)              = AVRORA
+    |  between azimuth (set, set .+ nightAngle)                = CREPASCVS
+    |  between azimuth (rise, rise .+ twilightAngle)           = ORTVS
+    |  between azimuth (set .- twilightAngle, set)             = OCCASVS
+    |  otherwise                                               = Day
     where (UTCTime day _) = utc
           azimuth = celestialAzimuth body utc
           rise = azimuthAtRise body day
           set = azimuthAtSet body day
 
           nightAngle = fromDegrees 18
-          (BabylonianClockVal babylonTime) = fromUtc BabylonianClock utc
+          twilightAngle = (set .- rise) / 12
 
 instance Show Occlusion where 
-    show occlusion
-        | occlusion == Night = "(Astronomical Night)"
-        | occlusion == AVRORA = "(AVRORA)"
-        | occlusion == ORTVS = "(ORTVS)"
-        | occlusion == OCCASVS = "(OCCASVS)"
-        | occlusion == CREPASCVS = "(CREPASCVS)"
-        | otherwise = ""
+    show Night = "(Astronomical Night)"
+    show AVRORA = "(AVRORA)"
+    show ORTVS = "(ORTVS)"
+    show OCCASVS = "(OCCASVS)"
+    show CREPASCVS = "(CREPASCVS)"
+    show Day = ""
 
 -- + -------------------------------------------------------------------- + --
 

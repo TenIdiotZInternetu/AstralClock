@@ -327,7 +327,7 @@ timeAtSet body day =
 
 timeAtRise :: CelestialBody -> Day -> TimeOfDay
 timeAtRise body day =
-    let sunset = timeOfDayToTime $ timeAtRise body day
+    let sunset = timeOfDayToTime $ timeAtSet body day
         noon = 11 * realToFrac hourDuration
         timeFromNoon = sunset - noon
     in  timeToTimeOfDay $ noon - timeFromNoon           -- set and rise lies at equal distance from noon on the dial

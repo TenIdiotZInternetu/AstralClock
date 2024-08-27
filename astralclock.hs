@@ -231,6 +231,8 @@ instance Show BabylonianClockValue where
 
 -- + -------------------------------------------------------------------- + --
 
+-- Not really a clock, but a collection of interesting informations about position of Sun and Moon
+
 newtype CelestialPosition = CelestialPosition {
     celestialBody :: CelestialBody
 }
@@ -263,7 +265,6 @@ instance Show CelestialValues where
                 "Azimuth: " ++ show (toDegrees (azimuth vals)) ++ "°\n" ++
                 "Time of rise: " ++ show (rise vals) ++ "\n" ++
                 "Time of set: " ++ show (set vals)
-
 
 
 -- + -------------------------------------------------------------------- + --
@@ -306,11 +307,6 @@ data LeftRight = L | R deriving (Enum, Show, Eq)
 
 
 data RomanNumerals = XII | I | II | III | IV | V | VI | VII | VIII | IX | X | XI deriving (Enum, Show)
-data ZodiacSign = Cancer | Leo | Libra | Virgo | Scorpio | Sagittarius | 
-                  Capricorn | Aquarius | Pisces | Aries | Taurus | Gemini
-                  deriving (Enum, Show)
-
-data Occlusion = Day | Night | AVRORA | ORTVS | OCCASVS | CREPASCVS deriving (Enum)
 
 -- [[ -------------------------- Astronomy ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
@@ -365,7 +361,52 @@ timeAtRise body day =
 
 -- + -------------------------------------------------------------------- + --
 
--- Creates circle reprezenting the zodiac dial at given time
+-- Colors on the inner dial represent how much is celestial body occluded by the shadow of the Earth
+-- Both Sun and Moon travel through all of its parts during day, 
+--      but its easier to describe with the position of the Sun
+
+-- Blue part of the dial represents day, when the sun is clearly visible on the sky
+-- Orange part represents sunrise (AVRORA) and sunset (CREPASCVS), and is bounded by the horizon line
+-- Just above the horizon line is dawn (ORTVS) and twilight (OCCASVS),
+--      at the same position as 1 and 12 of the Babylonian clock
+
+-- 18 Degrees below the the horizon line is situated the black part of the dial,
+--      it represents astronomical night, time at which the stars are visible the most
+
+data Occlusion = Day | Night | AVRORA | ORTVS | OCCASVS | CREPASCVS deriving (Enum, Eq)
+
+occlusion :: CelestialBody -> UTCTime -> Occlusion
+occlusion body utc
+    |  between azimuth (set .+ nightAngle, rise .- nightAngle) = Night
+    |  between azimuth (rise .- nightAngle, rise) = AVRORA
+    |  between azimuth (set, set .+ nightAngle) = CREPASCVS
+    |  babylonTime == 1 = ORTVS
+    |  babylonTime == 12 = OCCASVS
+    |  otherwise = Day
+    where (UTCTime day _) = utc
+          azimuth = celestialAzimuth body utc
+          rise = azimuthAtRise body day
+          set = azimuthAtSet body day
+
+          nightAngle = fromDegrees 18
+          (BabylonianClockVal babylonTime) = fromUtc BabylonianClock utc
+
+instance Show Occlusion where 
+    show occlusion
+        | occlusion == Night = "(Astronomical Night)"
+        | occlusion == AVRORA = "(AVRORA)"
+        | occlusion == ORTVS = "(ORTVS)"
+        | occlusion == OCCASVS = "(OCCASVS)"
+        | occlusion == CREPASCVS = "(CREPASCVS)"
+        | otherwise = ""
+
+-- + -------------------------------------------------------------------- + --
+
+data ZodiacSign = Cancer | Leo | Libra | Virgo | Scorpio | Sagittarius | 
+                  Capricorn | Aquarius | Pisces | Aries | Taurus | Gemini
+                  deriving (Enum, Show)
+
+-- Creates circle representing the zodiac dial at given time
 zodiacCircle :: UTCTime -> Circle
 zodiacCircle utc = Circle center zodiacRadius
     where gearAzimuth = angleAtTime zodiacGear utc
@@ -401,6 +442,7 @@ sunsetTime = timeAtSet Sun
 sunriseTime = timeAtRise Sun
 moonsetTime = timeAtSet Moon
 moonriseTime = timeAtRise Moon
+
 
 -- [[ --------------------------- Geometry ----------------------------- ]] --
 -- [[ ------------------------------------------------------------------ ]] --
@@ -448,6 +490,7 @@ fromDegrees degs = degs / 180 * pi
 
 toDegrees :: Angle -> Number
 toDegrees rads = rads / pi * 180
+
 
 -- + -------------------------------------------------------------------- + --
 
@@ -579,5 +622,5 @@ mapTuple :: (a -> b) -> (a, a) -> (b, b)
 mapTuple f (a, b) = (f a, f b)
 
 
-between :: Ord n => n -> (n, n) -> n
+between :: Ord n => n -> (n, n) -> Bool
 between val (lower, upper) = val > lower && val < upper
